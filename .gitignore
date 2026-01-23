@@ -12,3 +12,6 @@ config.py
 *.pyc
 *.dll
 *.exe
+joke.py
+PostLink.py
+.venv
