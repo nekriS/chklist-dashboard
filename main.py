@@ -46,11 +46,12 @@ if __name__ == "__main__":
                 destroy_tmp_parts.set()
                 options.update()
                 options.print_all_options()
+                options.create_folders()
                 thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
                 thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
             case "update":
                 update_dashboard(options.config)
-                update_status(options.config)
+                #update_status(options.config)
                 update_dashboard(options.config)
             case "connect":
                 get_tmp_parts_from_db(options.config)

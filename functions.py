@@ -12,6 +12,8 @@ import time
 import os
 
 
+
+
 def get_components(config, data, project):
     components = {}
     try:
@@ -58,64 +60,209 @@ def get_components(config, data, project):
 
     return components
 
+def send_last_file(client, config, target, text, file):
 
-def update_status(config):
-    data_all = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
-    data = data_all["PROJECTS"]
-    for project in data:
+    if isinstance(target, int):
+        targets = [target]
+    elif isinstance(target, str):
+        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+
+    for id in targets:
+        client.send_file(target_id = id, filepath = file, target_type="person", message=text)
+
+
+def get_list_ckeckers(components):
+
+    # {'TMP-1487': [1, 0, 'CAP_FP', 'GME', '_NONE', 0],
+    sch_checkers = {}
+    pcb_checkers = {}
+    for key in components.keys():
+        component = components[key]
+        
+        if component[3] != "_NONE":
+            
+            if component[3] not in sch_checkers.keys():
+                sch_checkers[component[3]] = []
+
+            # Добавляем проверяющего в список, только если комопнент не проверен и не добавлен в базу
+            if component[0] == 0 and component[5] != 1:
+                sch_checkers[component[3]].append(key)
+        else:
+            return False
+        
+        if component[4] != "_NONE":
+
+            if component[4] not in pcb_checkers.keys():
+                pcb_checkers[component[4]] = []
+
+            if component[1] == 0 and component[5] != 1:
+                pcb_checkers[component[4]].append(key)
+        else:
+            return False
+    
+    checkers = {}
+    checkers["sch"] = sch_checkers
+    checkers["pcb"] = pcb_checkers
+
+    return checkers
+
+
+
+
+
+def check_status(client, config):
+
+    data = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+    projects = data["PROJECTS"]
+
+    for project in projects:
         if not(project == "_COUNTER"):
 
+            state = projects[project]["STATE"]
+            path_last_file = projects[project]["PATH"][-1]
+            developer = projects[project]["DEVELOPER"]
             components = get_components(config, data, project)
-            yes_bd_schem = 0
-            no_bd_schem = 0
-            pcb_yes = 0
-            noTMP = 0
+
+            match state:
+                case 0: # Новый компонент
+
+                    message = f"""
+Добавлен новый проект для проверки!<br>
+<br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество компонентов: {len(components)}
+"""
+                    send_last_file(client, config, "lib_manager", message, path_last_file)
+                    create_task_notification(config, data, project, "lib_manager", 0, step=7)
+                    projects[project]["STATE"] = 1
+                
+                case 1: # Компонент отослан библиотекарю на распределение
+
+                    checkers = get_list_ckeckers(components)
+                    if checkers:
+                        delete_task_notification(config, data, project, "lib_manager", 0)
+                        projects[project]["STATE"] = 2
+
+                case 2: # Получен файл от библиотекаря
+
+                    checkers = get_list_ckeckers(components)
+                    if checkers:
+                        for checker in checkers["sch"].keys():
+                            
+                            if len(checkers["sch"][checker]) > 0:
+
+                                message = f"""
+Вы были назначены библиотекарем схем символов компонентов!<br>
+<br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 1, step=7)
+
+                        for checker in checkers["pcb"].keys():
+                            if len(checkers["pcb"][checker]) > 0:
+
+                                message = f"""
+Вы были назначены библиотекарем посадочных компонентов!<br>
+<br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 1, step=7)
+                        
+                        projects[project]["STATE"] = 3
+
+                    else:
+                        projects[project]["STATE"] = 1
+
+                case 3: # Файлы разосланы исполнителям, но никто не отослал файл
+                    pass
+
+                case 4: # Идет проверка, кто-то прислал файл
+                    pass 
+
+                case 5: # Все проверено
+                    pass
+
+                case 9: # Готово номинально, если все компоненты уже в базе
+                    pass
+                
+                case 10: # Готово
+                    pass
+
+
+
+
+                    
+                
             
-            for comp in components:
-                if components[comp][0] == 1:
-                    yes_bd_schem += 1
-                elif components[comp][0] == -1:
-                    no_bd_schem -= 1
-                if components[comp][1] == 1:
-                    pcb_yes += 1
-                noTMP += (components[comp][5])
 
+# def update_status(config):
+#     data_all = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+#     data = data_all["PROJECTS"]
+#     for project in data:
+#         if not(project == "_COUNTER"):
 
-            if data[project]["BD"] != yes_bd_schem:
-                data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            data[project]["BD"] = yes_bd_schem
-
-            if data[project]["FP"] != pcb_yes:
-                data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            data[project]["FP"] = pcb_yes
-
-            if data[project]["COUNT"] != len(components):
-                data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            data[project]["COUNT"] = len(components)
-
-            if data[project]["noTMP"] != noTMP:
-                data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            data[project]["noTMP"] = noTMP
-
-            if yes_bd_schem == data[project]["COUNT"] and pcb_yes == data[project]["COUNT"] and noTMP == data[project]["COUNT"]:
-                if data[project]["STATUS"] != "Готов":
-                    data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                data[project]["STATUS"] = "Готов"
-            elif (noTMP == data[project]["COUNT"]):
-                if data[project]["STATUS"] != "Готов номинально":
-                    data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                data[project]["STATUS"] = "Готов номинально"
-            elif yes_bd_schem == data[project]["COUNT"] and pcb_yes == data[project]["COUNT"]:
-                if data[project]["STATUS"] != "К переводу":
-                    data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                data[project]["STATUS"] = "К переводу"
-            elif ((yes_bd_schem < data[project]["COUNT"] or pcb_yes < data[project]["COUNT"]) and (yes_bd_schem > 0 or pcb_yes > 0)) or (no_bd_schem > 0):
-                if data[project]["STATUS"] != "Идет проверка":
-                    data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                data[project]["STATUS"] = "Идет проверка"
+#             components = get_components(config, data, project)
+#             yes_bd_schem = 0
+#             no_bd_schem = 0
+#             pcb_yes = 0
+#             noTMP = 0
             
-    data_all["PROJECTS"] = data
-    save_data(data_all, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+#             for comp in components:
+#                 if components[comp][0] == 1:
+#                     yes_bd_schem += 1
+#                 elif components[comp][0] == -1:
+#                     no_bd_schem -= 1
+#                 if components[comp][1] == 1:
+#                     pcb_yes += 1
+#                 noTMP += (components[comp][5])
+
+
+#             if data[project]["BD"] != yes_bd_schem:
+#                 data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#             data[project]["BD"] = yes_bd_schem
+
+#             if data[project]["FP"] != pcb_yes:
+#                 data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#             data[project]["FP"] = pcb_yes
+
+#             if data[project]["COUNT"] != len(components):
+#                 data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#             data[project]["COUNT"] = len(components)
+
+#             if data[project]["noTMP"] != noTMP:
+#                 data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#             data[project]["noTMP"] = noTMP
+
+#             if yes_bd_schem == data[project]["COUNT"] and pcb_yes == data[project]["COUNT"] and noTMP == data[project]["COUNT"]:
+#                 if data[project]["STATUS"] != "Готов":
+#                     data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#                 data[project]["STATUS"] = "Готов"
+#             elif (noTMP == data[project]["COUNT"]):
+#                 if data[project]["STATUS"] != "Готов номинально":
+#                     data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#                 data[project]["STATUS"] = "Готов номинально"
+#             elif yes_bd_schem == data[project]["COUNT"] and pcb_yes == data[project]["COUNT"]:
+#                 if data[project]["STATUS"] != "К переводу":
+#                     data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#                 data[project]["STATUS"] = "К переводу"
+#             elif ((yes_bd_schem < data[project]["COUNT"] or pcb_yes < data[project]["COUNT"]) and (yes_bd_schem > 0 or pcb_yes > 0)) or (no_bd_schem > 0):
+#                 if data[project]["STATUS"] != "Идет проверка":
+#                     data[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+#                 data[project]["STATUS"] = "Идет проверка"
+            
+#     data_all["PROJECTS"] = data
+#     save_data(data_all, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
 
 
 def get_dataframe(data):
@@ -196,7 +343,8 @@ def add_new_checklist(data, path):
         checklist["PROJECT_NAME"] = project_name
         checklist["PATH"] = [path]
         checklist["DEVELOPER"] = file_head[1][0]
-        checklist["STATUS"] = "Новый"
+        #checklist["STATUS"] = "Новый"
+        checklist["STATE"] = 0
         checklist["COUNT"] = len(table)
         checklist["BD"] = 0
         checklist["FP"] = 0
@@ -272,19 +420,30 @@ def check_function(config, client):
 
     data_all["PROJECTS"] = data
     save_data(data_all, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
-    update_status(config)
+    #update_status(config)
     try:
         update_dashboard(config)
     except Exception as e:
         log(f"[WARN] Failed to update dashboard: {e}")
 
 def create_task_notification(config, data_all, project, target, type_n, step=3, count=356):
+    """
+    Docstring для create_task_notification
+    
+    :param config: Конфигурация
+    :param data_all: Данные
+    :param project: Проект
+    :param target: Цель, конкретный пользователь или группа
+    :param type_n: Тип
+    :param step: Шаг в днях (по умолчанию 3)
+    :param count: Количество (по умолчанию 356)
+    """
 
     #data["NOTIFICATION"] = []
     if isinstance(target, int):
         targets = [target]
     elif isinstance(target, str):
-        targets = [int(x.strip()) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
         #targets = []
     else:
         return data_all
@@ -307,7 +466,7 @@ def delete_task_notification(config, data_all, project, target, type_n):
     if isinstance(target, int):
         targets = [target]
     elif isinstance(target, str):
-        targets = [int(x.strip()) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
         #targets = []
     else:
         return data_all
@@ -318,6 +477,8 @@ def delete_task_notification(config, data_all, project, target, type_n):
             log(f"Notification {project}-{target}-{type_n} was deleted!")
 
     return data_all
+
+
 
 def send_notifications(client, notifications):
 
@@ -358,7 +519,8 @@ def start_event_checker(config):
             user = context.get('ownerId')
             message_text = context.get('text').split('<span')[0]
 
-            admins = [int(x.strip()) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
+            admins = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
+            #aliase = config["USER_ALIASE"]
         except:
             pass
         #admins = self.config["USER_RIGHTS"]["ADMIN"]

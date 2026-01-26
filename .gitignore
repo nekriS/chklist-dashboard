@@ -15,3 +15,7 @@ config.py
 joke.py
 PostLink.py
 .venv
+
+*.zip
+
+test.py
