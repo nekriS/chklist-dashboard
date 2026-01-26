@@ -19,3 +19,5 @@ PostLink.py
 *.zip
 
 test.py
+config.ini
+CONFIG.INI

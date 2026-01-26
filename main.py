@@ -1,7 +1,7 @@
 from PostLink import PostLinkClient
 
 from system import log, create_thread_task, options
-from functions import check_function, get_tmp_parts_from_db, update_status, start_event_checker, update_dashboard
+from functions import check_function, get_tmp_parts_from_db, check_status, start_event_checker, update_dashboard
 
 
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
                 thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
             case "update":
                 update_dashboard(options.config)
-                #update_status(options.config)
+                check_status(client, options.config)
                 update_dashboard(options.config)
             case "connect":
                 get_tmp_parts_from_db(options.config)

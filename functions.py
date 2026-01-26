@@ -27,6 +27,7 @@ def get_components(config, data, project):
             df = pd.read_excel(f"{path}", header=None, names=["B", "C", "D", "E", "F", "J", "K"], usecols="B, C, D, E, F, J, K",skiprows=7).replace(to_replace={'Не проверено': 0, 'Да': 1, 'Нет': -1})
             column_order = ["B", "C", "D", "E", "F", "J", "K"]
             df = df[column_order].fillna('_NONE')
+            df = df.replace(' ', '_NONE')
             table = df.to_numpy()
 
         for lines in table:
@@ -62,16 +63,27 @@ def get_components(config, data, project):
 
 def send_last_file(client, config, target, text, file):
 
-    if isinstance(target, int):
-        targets = [target]
-    elif isinstance(target, str):
-        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+    try:
 
-    for id in targets:
-        client.send_file(target_id = id, filepath = file, target_type="person", message=text)
+        if isinstance(target, int):
+            targets = [target]
+        elif isinstance(target, str):
+            if target in config["USER_RIGHTS"].keys():
+                targets = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+            elif target in config["USER_ALIASE"].keys():
+                targets = [int(config["USER_ALIASE"][target])]
+            #targets = []
+        else:
+            targets = []
+        
+        for id in targets:
+            client.send_file(target_id = id, filepath = file, target_type="person", message=text)
+
+    except Exception as e:
+        log(f"Can not send last file: {e}")
 
 
-def get_list_ckeckers(components):
+def get_list_checkers(components):
 
     # {'TMP-1487': [1, 0, 'CAP_FP', 'GME', '_NONE', 0],
     sch_checkers = {}
@@ -115,23 +127,66 @@ def check_status(client, config):
     data = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
     projects = data["PROJECTS"]
 
-    for project in projects:
+
+    for project in projects.keys():
         if not(project == "_COUNTER"):
+
+
 
             state = projects[project]["STATE"]
             path_last_file = projects[project]["PATH"][-1]
+
             developer = projects[project]["DEVELOPER"]
-            components = get_components(config, data, project)
+
+            components = get_components(config, projects, project)
+
+
+            yes_bd_schem = 0
+            no_bd_schem = 0
+            pcb_yes = 0
+            noTMP = 0
+            for comp in components:
+                if components[comp][0] == 1:
+                    yes_bd_schem += 1
+                elif components[comp][0] == -1:
+                    no_bd_schem -= 1
+                if components[comp][1] == 1:
+                    pcb_yes += 1
+                noTMP += (components[comp][5])
+
+            if noTMP == len(components):
+                projects[project]["STATE"] = 9
+
 
             match state:
-                case 0: # Новый компонент
+                case 0: # Новый проект
 
                     message = f"""
-Добавлен новый проект для проверки!<br>
+Добавлен новый проект для проверки! Распределите их, пожалуйста, между проверяющими.<br>
 <br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
-Количество компонентов: {len(components)}
+Количество компонентов: {len(components)}<br>
+<br>
+После заполнения полей с проверяющими, пришлите файл в этот чат. Рассылать проверяющим самостоятельно не требуется.
+"""
+                    send_last_file(client, config, "lib_manager", message, path_last_file)
+
+                    create_task_notification(config, data, project, "lib_manager", 0, step=7)
+
+                    projects[project]["STATE"] = 1
+
+
+                case 101: # Добавлен новый компонент в текущий проект
+                    message = f"""
+В действующем проекте были добавлены новые компоненты! Распределите их, пожалуйста, между проверяющими.<br>
+
+<br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество компонентов: {len(components)}<br>
+<br>
+После заполнения полей с проверяющими, пришлите файл в этот чат. Рассылать проверяющим самостоятельно не требуется.
 """
                     send_last_file(client, config, "lib_manager", message, path_last_file)
                     create_task_notification(config, data, project, "lib_manager", 0, step=7)
@@ -139,21 +194,20 @@ def check_status(client, config):
                 
                 case 1: # Компонент отослан библиотекарю на распределение
 
-                    checkers = get_list_ckeckers(components)
+                    checkers = get_list_checkers(components)
                     if checkers:
                         delete_task_notification(config, data, project, "lib_manager", 0)
                         projects[project]["STATE"] = 2
 
                 case 2: # Получен файл от библиотекаря
 
-                    checkers = get_list_ckeckers(components)
+                    checkers = get_list_checkers(components)
                     if checkers:
                         for checker in checkers["sch"].keys():
-                            
                             if len(checkers["sch"][checker]) > 0:
 
                                 message = f"""
-Вы были назначены библиотекарем схем символов компонентов!<br>
+Вы были назначены проверяющим схем символов компонентов!<br>
 <br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
@@ -168,11 +222,11 @@ def check_status(client, config):
                             if len(checkers["pcb"][checker]) > 0:
 
                                 message = f"""
-Вы были назначены библиотекарем посадочных компонентов!<br>
+Вы были назначены проверяющим посадочных компонентов!<br>
 <br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
 <br>
 После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
 """
@@ -185,19 +239,92 @@ def check_status(client, config):
                         projects[project]["STATE"] = 1
 
                 case 3: # Файлы разосланы исполнителям, но никто не отослал файл
-                    pass
+
+                    checkers = get_list_checkers(components)
+                    if checkers:
+
+                        for checker in checkers["sch"].keys():
+                            if len(checkers["sch"][checker]) == 0:
+                                projects[project]["STATE"] = 4
+
+                        for checker in checkers["pcb"].keys():
+                            if len(checkers["pcb"][checker]) == 0:
+                                projects[project]["STATE"] = 4
+
 
                 case 4: # Идет проверка, кто-то прислал файл
-                    pass 
+
+                    checkers = get_list_checkers(components)
+                    if checkers:
+
+                        for checker in checkers["sch"].keys():
+                            if len(checkers["sch"][checker]) == 0:
+                                delete_task_notification(config, data, project, checker, 1)
+
+                        for checker in checkers["pcb"].keys():
+                            if len(checkers["pcb"][checker]) == 0:
+                                delete_task_notification(config, data, project, checker, 1) 
+
+                    else:
+                        projects[project]["STATE"] = 101
+
+                    if yes_bd_schem == len(components) and pcb_yes == len(components):
+                        projects[project]["STATE"] = 5
 
                 case 5: # Все проверено
-                    pass
+                    checkers = get_list_checkers(components)
+                    if checkers:
+                        
+                        message = f"""
+В проекте {project} все компоненты готовы к добавлению в базу!<br>
+<br>
+Разработчик: {developer}<br>
+Количество компонентов: {len(components)}<br>
+<br>
+Дополнительныйх действий не требуется.
+"""
+                        send_last_file(client, config, "lib_manager", message, path_last_file)
+                        create_task_notification(config, data, project, "lib_manager", 3, step=7)
+                        projects[project]["STATE"] = 6
+
+                    else:
+                        projects[project]["STATE"] = 101
+
+                case 6:
+                    
+                    if noTMP == len(components):
+
+                        message = f"""
+Все компоненты в проекте {project} добавлены в базу!"""
+                        
+                        send_last_file(client, config, project["DEVELOPER"], message, path_last_file)
+                        #delete_task_notification(config, data, project, "lib_manager", 3) 
+                        projects[project]["STATE"] = 10
 
                 case 9: # Готово номинально, если все компоненты уже в базе
                     pass
                 
                 case 10: # Готово
                     pass
+            
+            if projects[project]["BD"] != yes_bd_schem:
+                projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            projects[project]["BD"] = yes_bd_schem
+
+            if projects[project]["FP"] != pcb_yes:
+                projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            projects[project]["FP"] = pcb_yes
+
+            if projects[project]["COUNT"] != len(components):
+                projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            projects[project]["COUNT"] = len(components)
+
+            if projects[project]["noTMP"] != noTMP:
+                projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            projects[project]["noTMP"] = noTMP
+
+    data["PROJECTS"] = projects
+    save_data(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
 
 
 
@@ -280,7 +407,7 @@ def get_dataframe(data):
             row_data.append(data[project]["NUMBER"])
             row_data.append(data[project]["PROJECT_NAME"])
             row_data.append(data[project]["DEVELOPER"])
-            row_data.append(data[project]["STATUS"])
+            row_data.append(data[project]["STATE"])
             row_data.append(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"))
             row_data.append(f"{data[project]["BD"]:>3} / {data[project]["COUNT"]:<3}")
             row_data.append(f"{data[project]["FP"]:>3} / {data[project]["COUNT"]:<3}")
@@ -401,26 +528,29 @@ def check_function(config, client):
         
         #update_dashboard(config)
     
-    for project in data:
-        if not(project == "_COUNTER"):
-            if "Готов" in data[project]["STATUS"]:
-                if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(data[project]["VISIBLE"]) == True:
-                    data[project]["VISIBLE"] = False
-                    log(f"Project {project} has become invisible!")
-                if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_DELETE"]) and bool(data[project]["VISIBLE"]) == False:
-                    delete_project(project)
+    # for project in data:
+    #     if not(project == "_COUNTER"):
+    #         if "Готов" in data[project]["STATUS"]:
+    #             if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(data[project]["VISIBLE"]) == True:
+    #                 data[project]["VISIBLE"] = False
+    #                 log(f"Project {project} has become invisible!")
+    #             if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_DELETE"]) and bool(data[project]["VISIBLE"]) == False:
+    #                 delete_project(project)
 
-            if data[project]["noTMP"] < data[project]["COUNT"] and data[project]["BD"] == data[project]["COUNT"] and data[project]["FP"] == data[project]["COUNT"]:
-                data_all = create_task_notification(config, data_all, project, "lib_manager", 0)
-            elif (data[project]["noTMP"] == data[project]["COUNT"] and data[project]["BD"] == data[project]["COUNT"] and data[project]["FP"] == data[project]["COUNT"]) or data[project]["noTMP"] == 0:
-                data_all = delete_task_notification(config, data_all, project, "lib_manager", 0)
+    #         if data[project]["noTMP"] < data[project]["COUNT"] and data[project]["BD"] == data[project]["COUNT"] and data[project]["FP"] == data[project]["COUNT"]:
+    #             data_all = create_task_notification(config, data_all, project, "lib_manager", 0)
+    #         elif (data[project]["noTMP"] == data[project]["COUNT"] and data[project]["BD"] == data[project]["COUNT"] and data[project]["FP"] == data[project]["COUNT"]) or data[project]["noTMP"] == 0:
+    #             data_all = delete_task_notification(config, data_all, project, "lib_manager", 0)
 
     
-    data_all["NOTIFICATIONS"] = send_notifications(client, data_all["NOTIFICATIONS"])
+    # data_all["NOTIFICATIONS"] = send_notifications(client, data_all["NOTIFICATIONS"])
 
     data_all["PROJECTS"] = data
     save_data(data_all, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
-    #update_status(config)
+    try:
+        check_status(client, config)
+    except Exception as e:
+        log(f"[WARN] Failed to check status: {e}")
     try:
         update_dashboard(config)
     except Exception as e:
@@ -440,25 +570,31 @@ def create_task_notification(config, data_all, project, target, type_n, step=3, 
     """
 
     #data["NOTIFICATION"] = []
-    if isinstance(target, int):
-        targets = [target]
-    elif isinstance(target, str):
-        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
-        #targets = []
-    else:
+    try:
+        if isinstance(target, int):
+            targets = [target]
+        elif isinstance(target, str):
+            if target in config["USER_RIGHTS"].keys():
+                targets = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+            elif target in config["USER_ALIASE"].keys():
+                targets = [int(config["USER_ALIASE"][target])]
+            #targets = []
+        else:
+            return data_all
+        for target in targets:
+            if f"{project}-{target}-{type_n}" not in list(data_all["NOTIFICATIONS"].keys()):
+                notification = {}
+                notification["PROJECT_NAME"] = project
+                notification["TARGET"] = target
+                notification["STEP"] = step
+                notification["NEXT_TIME"] = f"{datetime.datetime.now().strftime('%Y.%m.%d')}"
+                notification["COUNT"] = count
+                notification["TYPE"] = type_n
+                data_all["NOTIFICATIONS"][f"{project}-{target}-{type_n}"] = notification
+                log(f"Notification {project}-{target}-{type_n} was created!")
         return data_all
-    for target in targets:
-        if f"{project}-{target}-{type_n}" not in list(data_all["NOTIFICATIONS"].keys()):
-            notification = {}
-            notification["PROJECT_NAME"] = project
-            notification["TARGET"] = target
-            notification["STEP"] = step
-            notification["NEXT_TIME"] = f"{datetime.datetime.now().strftime('%Y.%m.%d')}"
-            notification["COUNT"] = count
-            notification["TYPE"] = type_n
-            data_all["NOTIFICATIONS"][f"{project}-{target}-{type_n}"] = notification
-            log(f"Notification {project}-{target}-{type_n} was created!")
-    return data_all
+    except Exception as e:
+        log(f"create_task_notification {e}")
 
 def delete_task_notification(config, data_all, project, target, type_n):
 
@@ -466,7 +602,10 @@ def delete_task_notification(config, data_all, project, target, type_n):
     if isinstance(target, int):
         targets = [target]
     elif isinstance(target, str):
-        targets = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+        if target in config["USER_RIGHTS"].keys():
+            targets = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+        elif target in config["USER_ALIASE"].keys():
+            targets = [int(config["USER_ALIASE"][target])]
         #targets = []
     else:
         return data_all
@@ -602,18 +741,20 @@ def update_dashboard(config):
             # row_data.append(f"{data[project]["noTMP"]:>3} / {data[project]["COUNT"]:<3}")
 
 
-            match data[project]["STATUS"]:
-                case "Новый":
+            match data[project]["STATE"]:
+                case 0:
                     color = PatternFill(start_color=config['COLORS']['YELLOW'], end_color=config['COLORS']['YELLOW'], fill_type="solid")
-                case "Идет проверка":
+                case 4:
                     color = PatternFill(start_color=config['COLORS']['RED'], end_color=config['COLORS']['RED'], fill_type="solid")
-                case "К переводу":
+                case 5:
                     color = PatternFill(start_color=config['COLORS']['BLUE'], end_color=config['COLORS']['BLUE'], fill_type="solid")
-                case "Готов":
+                case 10:
                     color = PatternFill(start_color=config['COLORS']['GREEN'], end_color=config['COLORS']['GREEN'], fill_type="solid")
-                case "Готов номинально":
+                case 11:
                     color = PatternFill(start_color=config['COLORS']['GREEN'], end_color=config['COLORS']['GREEN'], fill_type="solid")
-                case "Готов вручную":
+                case 12:
+                    color = PatternFill(start_color=config['COLORS']['GREEN'], end_color=config['COLORS']['GREEN'], fill_type="solid")
+                case _:
                     color = PatternFill(start_color=config['COLORS']['GREEN'], end_color=config['COLORS']['GREEN'], fill_type="solid")
 
             for col_idx, value in enumerate(row_data, start=1):
