@@ -236,7 +236,7 @@ def check_status(client, config):
                         projects[project]["STATE"] = 3
 
                     else:
-                        projects[project]["STATE"] = 1
+                        projects[project]["STATE"] = 101
 
                 case 3: # Файлы разосланы исполнителям, но никто не отослал файл
 
