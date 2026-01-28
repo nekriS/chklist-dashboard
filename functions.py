@@ -231,7 +231,7 @@ def check_status(client, config):
 После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
 """
                                 send_last_file(client, config, checker, message, path_last_file)
-                                create_task_notification(config, data, project, checker, 1, step=7)
+                                create_task_notification(config, data, project, checker, 2, step=7)
                         
                         projects[project]["STATE"] = 3
 
@@ -263,7 +263,7 @@ def check_status(client, config):
 
                         for checker in checkers["pcb"].keys():
                             if len(checkers["pcb"][checker]) == 0:
-                                delete_task_notification(config, data, project, checker, 1) 
+                                delete_task_notification(config, data, project, checker, 2) 
 
                     else:
                         projects[project]["STATE"] = 101
@@ -281,7 +281,7 @@ def check_status(client, config):
 Разработчик: {developer}<br>
 Количество компонентов: {len(components)}<br>
 <br>
-Дополнительныйх действий не требуется.
+Дополнительных действий не требуется.
 """
                         send_last_file(client, config, "lib_manager", message, path_last_file)
                         create_task_notification(config, data, project, "lib_manager", 3, step=7)
@@ -291,13 +291,13 @@ def check_status(client, config):
                         projects[project]["STATE"] = 101
 
                 case 6:
-                    
                     if noTMP == len(components):
 
                         message = f"""
 Все компоненты в проекте {project} добавлены в базу!"""
                         
-                        send_last_file(client, config, project["DEVELOPER"], message, path_last_file)
+                        delete_task_notification(config, data, project, "lib_manager", 3)
+                        send_last_file(client, config, projects[project]["DEVELOPER"], message, path_last_file)
                         #delete_task_notification(config, data, project, "lib_manager", 3) 
                         projects[project]["STATE"] = 10
 
@@ -305,7 +305,13 @@ def check_status(client, config):
                     pass
                 
                 case 10: # Готово
-                    pass
+
+                    if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(data[project]["VISIBLE"]) == True:
+                        data[project]["VISIBLE"] = False
+                        log(f"Project {project} has become invisible!")
+                    if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_DELETE"]) and bool(data[project]["VISIBLE"]) == False:
+                        delete_project(project)
+
             
             if projects[project]["BD"] != yes_bd_schem:
                 projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -498,8 +504,8 @@ def delete_project(project):
 
 def check_function(config, client):
 
-    data_all = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
-    data = data_all["PROJECTS"]
+    data = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+    projects = data["PROJECTS"]
     path_upload_folder = f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
     path_work_folder = f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_INWORK']}"
     today_date = datetime.datetime.now().strftime('%Y_%m_%d')
@@ -514,11 +520,11 @@ def check_function(config, client):
                 new_file_path = f"{path_work_folder}/{project_name}_{today_date}_{current_time}.xlsx".replace(" ", "_")
                 shutil.move(Path(f"{path_upload_folder}/{file}"), Path(new_file_path))
 
-                if not(project_name in data):
-                    add_new_checklist(data, new_file_path)
+                if not(project_name in projects):
+                    add_new_checklist(projects, new_file_path)
                 else:
-                    data[project_name]["PATH"].append(new_file_path)
-                    data[project_name]["COUNT"] = max(data[project_name]["COUNT"], len(pd.read_excel(f"{new_file_path}", header=None, usecols="A",skiprows=7).fillna("_NONE").values))
+                    projects[project_name]["PATH"].append(new_file_path)
+                    projects[project_name]["COUNT"] = max(projects[project_name]["COUNT"], len(pd.read_excel(f"{new_file_path}", header=None, usecols="A",skiprows=7).fillna("_NONE").values))
 
                     client.send_message()
                     
@@ -543,10 +549,10 @@ def check_function(config, client):
     #             data_all = delete_task_notification(config, data_all, project, "lib_manager", 0)
 
     
-    # data_all["NOTIFICATIONS"] = send_notifications(client, data_all["NOTIFICATIONS"])
+    data["NOTIFICATIONS"] = send_notifications(client, data["NOTIFICATIONS"])
 
-    data_all["PROJECTS"] = data
-    save_data(data_all, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+    data["PROJECTS"] = projects
+    save_data(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
     try:
         check_status(client, config)
     except Exception as e:
@@ -587,7 +593,8 @@ def create_task_notification(config, data_all, project, target, type_n, step=3, 
                 notification["PROJECT_NAME"] = project
                 notification["TARGET"] = target
                 notification["STEP"] = step
-                notification["NEXT_TIME"] = f"{datetime.datetime.now().strftime('%Y.%m.%d')}"
+                notification["NEXT_TIME"] = f"{(datetime.datetime.strptime(notification["NEXT_TIME"], "%Y.%m.%d") + datetime.timedelta(days=notification["STEP"])).strftime('%Y.%m.%d')}"
+                #notification["NEXT_TIME"] = f"{datetime.datetime.now().strftime('%Y.%m.%d')}"
                 notification["COUNT"] = count
                 notification["TYPE"] = type_n
                 data_all["NOTIFICATIONS"][f"{project}-{target}-{type_n}"] = notification
@@ -628,6 +635,12 @@ def send_notifications(client, notifications):
             notifications[notice]
             match notifications[notice]["TYPE"]:
                 case 0:
+                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Для чеклиста проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong> необходимо распределить проверяющих!</div>'
+                case 1:
+                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, схем символы проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                case 2:
+                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                case 3:
                     text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>В проекте <strong>{notifications[notice]["PROJECT_NAME"]}</strong> все компоненты готовы к переводу в базу!</div>'
                     #text = f"<strong>Внимание!</strong><br><br>В проекте <mark>{notifications[notice]["PROJECT_NAME"]}</mark> все компоненты готовы к переводу в базу!"
                     #f"<strong>Внимание!</strong><br><br>В проекте <mark>CUBESAT_TRANSCEIVER_2_25033_R1</mark> все компоненты готовы к переводу в базу!"
@@ -658,7 +671,7 @@ def start_event_checker(config):
             user = context.get('ownerId')
             message_text = context.get('text').split('<span')[0]
 
-            admins = [int(config["USER_ALIASE"][x.upper().strip()]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
+            admins = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
             #aliase = config["USER_ALIASE"]
         except:
             pass
@@ -676,7 +689,7 @@ def start_event_checker(config):
                             dashboard_html = get_dashboard_html(config)
                             client.send_message(target_id=int(user), target_type="person", text=f"{dashboard_html}")
                         case "/joke":
-                            joke = get_joke(f"Напиши короткий смешной анекдот про корпоративный мессенджер Postlink.")
+                            joke = get_joke(f"Напиши короткий смешной анекдот.")
                             joke = joke.replace("\n","<br>")
                             client.send_message(target_id=int(user), target_type="person", text=f"{joke}")
 

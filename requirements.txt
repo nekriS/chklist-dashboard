@@ -3,3 +3,4 @@ pyodbc
 pandas
 requests
 websocket
+websocket-client
