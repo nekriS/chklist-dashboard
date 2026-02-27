@@ -17,6 +17,7 @@ PostLink.py
 .venv
 
 *.zip
+*.xlsx
 
 test.py
 config.ini
