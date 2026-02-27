@@ -106,7 +106,7 @@ def combine_checklists(first_path, second_path, output_path):
 
     # переносим проверяющих если они не заполнены
     for row in range(start_row, end_row):
-        print(1)
+        
         cell_value = first_main_sheet.cell(row=row, column=STATUS_COLUMN).value
         if cell_value != None:
             second_row = find_row(first_main_sheet.cell(row=row, column=PN_NUMBER_COLUMN).value, second_main_sheet, PN_NUMBER_COLUMN, start_row, start_row + MAX_COMPONENTS)
@@ -125,8 +125,6 @@ def combine_checklists(first_path, second_path, output_path):
         
 
     for sheet_name in first_sheet_names[1:]:
-
-        print(sheet_name)
 
         first_sheet = first_wb[sheet_name]
         if sheet_name in second_wb.sheetnames:
@@ -176,9 +174,6 @@ def combine_checklists(first_path, second_path, output_path):
                 f_start_row, f_end_row = find_start_and_end_row(first_sheet)
                 s_start_row, s_end_row = find_start_and_end_row(second_sheet)
 
-                print(f_start_row, f_end_row)
-                print(s_start_row, s_end_row)
-
                 for row in range(f_start_row, f_end_row):
                     f_status = first_sheet.cell(row=row, column=STATUS_COLUMN).value
                     if f_status == "Не проверено":
@@ -208,9 +203,6 @@ def combine_checklists(first_path, second_path, output_path):
 
                 f_start_row, f_end_row = find_start_and_end_row(first_sheet, start=f_end_row)
                 s_start_row, s_end_row = find_start_and_end_row(second_sheet, start=s_end_row)
-
-                print(f_start_row, f_end_row)
-                print(s_start_row, s_end_row)
 
                 for row in range(f_start_row, f_end_row):
                     f_status = first_sheet.cell(row=row, column=STATUS_COLUMN).value

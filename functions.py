@@ -349,7 +349,7 @@ def check_status(client, config):
                     if checkers:
                         
                         message = f"""
-В проекте {project} все компоненты готовы к добавлению в базу!<br>
+В проекте {project} все компоненты готовы к добавлению в базу! <br>
 <br><br>
 Разработчик: {developer}<br>
 Количество компонентов: {len(components)}<br>
@@ -369,8 +369,8 @@ def check_status(client, config):
                         message = f"""
 Все компоненты в проекте {project} добавлены в базу!"""
                         
-                        delete_task_notification(config, data, project, "lib_manager", 5)
-                        send_last_file(client, config, projects[project]["DEVELOPER"], message, path_last_file)
+                        delete_task_notification(config, data, project, "lib_manager", 4)
+                        send_last_file(client, config, developer, message, path_last_file)
                         #delete_task_notification(config, data, project, "lib_manager", 3) 
                         projects[project]["STATE"] = 10
 
