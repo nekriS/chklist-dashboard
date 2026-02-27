@@ -44,7 +44,7 @@ def get_components(config, data, project):
             else:
                 if lines13 != 0:
                     components[lines[0]][0] = lines13
-                if lines[5] != 0:
+                if lines[5] != 0 and lines[5] != "_NONE":
                     components[lines[0]][1] = lines[5]
                 if lines[2] != "_NONE":
                     components[lines[0]][2] = lines[2]
@@ -163,7 +163,7 @@ def check_status(client, config):
 
                     message = f"""
 Добавлен новый проект для проверки! Распределите их, пожалуйста, между проверяющими.<br>
-<br>
+<br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
 Количество компонентов: {len(components)}<br>
@@ -181,7 +181,7 @@ def check_status(client, config):
                     message = f"""
 В действующем проекте были добавлены новые компоненты! Распределите их, пожалуйста, между проверяющими.<br>
 
-<br>
+<br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
 Количество компонентов: {len(components)}<br>
@@ -208,7 +208,7 @@ def check_status(client, config):
 
                                 message = f"""
 Вы были назначены проверяющим схем символов компонентов!<br>
-<br>
+<br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
 Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
@@ -223,7 +223,7 @@ def check_status(client, config):
 
                                 message = f"""
 Вы были назначены проверяющим посадочных компонентов!<br>
-<br>
+<br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
 Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
@@ -262,12 +262,34 @@ def check_status(client, config):
                                 delete_task_notification(config, data, project, checker, 1)
                             else:
                                 flag_all_check = False
+                                message = f"""
+В одном из проектов были внесены правки, проаерьте, пожалуйста!<br>
+<br><br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 1)
 
                         for checker in checkers["pcb"].keys():
                             if len(checkers["pcb"][checker]) == 0:
                                 delete_task_notification(config, data, project, checker, 2) 
                             else:
                                 flag_all_check = False
+                                message = f"""
+В одном из проектов были внесены правки, проаерьте, пожалуйста!<br>
+<br><br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 2)
 
                     else:
                         projects[project]["STATE"] = 101
@@ -276,9 +298,19 @@ def check_status(client, config):
                         projects[project]["STATE"] = 5
                         delete_task_notification(config, data, project, developer, 3)
                     elif flag_all_check and (yes_bd_schem != len(components) or pcb_yes != len(components)):
+                        message = f"""
+Проект проверен, есть замечания. Исправьте, пожалуйста.<br>
+<br><br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+<br>
+После окончания правок, пожалуйста, пришлите свеже сгенерированный файл. Если Вы не согласны с некоторыми замечаниями, обсудите их с проверяющим. Если нужно исправить "Нет" на "Да", то сначала отправьте полученный файл с исправлением, а затем свеже сгенерированный чеклист.
+"""
+                        send_last_file(client, config, developer, message, path_last_file)
                         create_task_notification(config, data, project, developer, 3)
-
-
+                    elif not(flag_all_check):
+                        delete_task_notification(config, data, project, developer, 3)
                     # if yes_bd_schem == len(components) and pcb_yes == len(components):
                     #     projects[project]["STATE"] = 5
                     #     delete_task_notification(config, data, project, developer, 3)
@@ -292,7 +324,7 @@ def check_status(client, config):
                         
                         message = f"""
 В проекте {project} все компоненты готовы к добавлению в базу!<br>
-<br>
+<br><br>
 Разработчик: {developer}<br>
 Количество компонентов: {len(components)}<br>
 <br>
