@@ -379,10 +379,10 @@ def check_status(client, config):
                 
                 case 10: # Готово
 
-                    if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(data[project]["VISIBLE"]) == True:
-                        data[project]["VISIBLE"] = False
+                    if check_date_diff(datetime.datetime.strptime(projects[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(projects[project]["VISIBLE"]) == True:
+                        projects[project]["VISIBLE"] = False
                         log(f"Project {project} has become invisible!")
-                    if check_date_diff(datetime.datetime.strptime(data[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_DELETE"]) and bool(data[project]["VISIBLE"]) == False:
+                    if check_date_diff(datetime.datetime.strptime(projects[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_DELETE"]) and bool(projects[project]["VISIBLE"]) == False:
                         delete_project(project)
             
             if projects[project]["BD"] != yes_bd_schem:
