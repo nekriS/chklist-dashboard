@@ -144,14 +144,17 @@ def check_status(client, config):
             yes_bd_schem = 0
             no_bd_schem = 0
             pcb_yes = 0
+            pcb_no = 0
             noTMP = 0
             for comp in components:
                 if components[comp][0] == 1:
                     yes_bd_schem += 1
                 elif components[comp][0] == -1:
-                    no_bd_schem -= 1
+                    no_bd_schem += 1
                 if components[comp][1] == 1:
                     pcb_yes += 1
+                elif components[comp][1] == -1:
+                    pcb_no += 1
                 noTMP += (components[comp][5])
 
             if noTMP == len(components):
@@ -262,34 +265,12 @@ def check_status(client, config):
                                 delete_task_notification(config, data, project, checker, 1)
                             else:
                                 flag_all_check = False
-                                message = f"""
-В одном из проектов были внесены правки, проаерьте, пожалуйста!<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
-                                send_last_file(client, config, checker, message, path_last_file)
-                                create_task_notification(config, data, project, checker, 1)
 
                         for checker in checkers["pcb"].keys():
                             if len(checkers["pcb"][checker]) == 0:
                                 delete_task_notification(config, data, project, checker, 2) 
                             else:
                                 flag_all_check = False
-                                message = f"""
-В одном из проектов были внесены правки, проаерьте, пожалуйста!<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
-                                send_last_file(client, config, checker, message, path_last_file)
-                                create_task_notification(config, data, project, checker, 2)
 
                     else:
                         projects[project]["STATE"] = 101
@@ -298,6 +279,7 @@ def check_status(client, config):
                         projects[project]["STATE"] = 5
                         delete_task_notification(config, data, project, developer, 3)
                     elif flag_all_check and (yes_bd_schem != len(components) or pcb_yes != len(components)):
+                        
                         message = f"""
 Проект проверен, есть замечания. Исправьте, пожалуйста.<br>
 <br><br>
@@ -309,14 +291,58 @@ def check_status(client, config):
 """
                         send_last_file(client, config, developer, message, path_last_file)
                         create_task_notification(config, data, project, developer, 3)
-                    elif not(flag_all_check):
-                        delete_task_notification(config, data, project, developer, 3)
+                        projects[project]["STATE"] = 401
+
+                    # elif not(flag_all_check):
+                    #     delete_task_notification(config, data, project, developer, 3)
                     # if yes_bd_schem == len(components) and pcb_yes == len(components):
                     #     projects[project]["STATE"] = 5
                     #     delete_task_notification(config, data, project, developer, 3)
                     # else:
                     #     create_task_notification(config, data, project, developer, 3)
-                    
+
+                case 401: #доработка
+
+                    checkers = get_list_checkers(components)
+
+                    if checkers and no_bd_schem == 0 and pcb_no == 0:
+
+                        delete_task_notification(config, data, project, developer, 3)
+
+                        for checker in checkers["sch"].keys():
+                            if len(checkers["sch"][checker]) == 0:
+                                delete_task_notification(config, data, project, checker, 1)
+                            else:
+                                message = f"""
+В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
+<br><br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 1)
+                                projects[project]["STATE"] = 4
+
+                        for checker in checkers["pcb"].keys():
+                            if len(checkers["pcb"][checker]) == 0:
+                                delete_task_notification(config, data, project, checker, 2) 
+                            else:
+                                message = f"""
+В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
+<br><br>
+Название проекта: {project}<br>
+Разработчик: {developer}<br>
+Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
+<br>
+После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
+"""
+                                send_last_file(client, config, checker, message, path_last_file)
+                                create_task_notification(config, data, project, checker, 2)
+                                projects[project]["STATE"] = 4
+                                        
 
                 case 5: # Все проверено
                     checkers = get_list_checkers(components)
