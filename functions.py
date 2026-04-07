@@ -700,6 +700,8 @@ def delete_task_notification(config, data_all, project, target, type_n):
     return data_all
 
 
+def makeBorder(text):
+    return  f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;">{text}</div>'
 
 def send_notifications(client, notifications):
 
@@ -710,17 +712,31 @@ def send_notifications(client, notifications):
             notifications[notice]
             match notifications[notice]["TYPE"]:
                 case 0:
-                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Для чеклиста проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong> необходимо распределить проверяющих!</div>'
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Для чеклиста проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong> необходимо распределить проверяющих!")
                 case 1:
-                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, схем символы проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Проверьте, пожалуйста, схем символы проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")   
                 case 2:
-                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")
+                case 3:
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Внесит, пожалуйста, правки в проект <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")
                 case 4:
-                    text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>В проекте <strong>{notifications[notice]["PROJECT_NAME"]}</strong> все компоненты готовы к переводу в базу!</div>'
-                    #text = f"<strong>Внимание!</strong><br><br>В проекте <mark>{notifications[notice]["PROJECT_NAME"]}</mark> все компоненты готовы к переводу в базу!"
-                    #f"<strong>Внимание!</strong><br><br>В проекте <mark>CUBESAT_TRANSCEIVER_2_25033_R1</mark> все компоненты готовы к переводу в базу!"
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>В проекте <strong>{notifications[notice]["PROJECT_NAME"]}</strong> все компоненты готовы к переводу в базу!")
                 case _:
+                    log(f"Notification is bad. Can't resolve type: {notifications[notice]["TYPE"]}, notice: {notice}")
                     text = None
+
+                # case 0:
+                #     text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Для чеклиста проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong> необходимо распределить проверяющих!</div>'
+                # case 1:
+                #     text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, схем символы проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                # case 2:
+                #     text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.</div>'
+                # case 4:
+                #     text = f'<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; border: 3px solid yellow; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;"><strong>Внимание!</strong><br><br>В проекте <strong>{notifications[notice]["PROJECT_NAME"]}</strong> все компоненты готовы к переводу в базу!</div>'
+                #     #text = f"<strong>Внимание!</strong><br><br>В проекте <mark>{notifications[notice]["PROJECT_NAME"]}</mark> все компоненты готовы к переводу в базу!"
+                #     #f"<strong>Внимание!</strong><br><br>В проекте <mark>CUBESAT_TRANSCEIVER_2_25033_R1</mark> все компоненты готовы к переводу в базу!"
+                # case _:
+                #     text = None
                 
             if text is not None:
                 client.send_message(target_id=int(notifications[notice]["TARGET"]), target_type="person", text=text)
