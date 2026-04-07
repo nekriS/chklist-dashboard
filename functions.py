@@ -285,7 +285,6 @@ def check_status(client, config):
 <br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
 <br>
 После окончания правок, пожалуйста, пришлите свеже сгенерированный файл. Если Вы не согласны с некоторыми замечаниями, обсудите их с проверяющим. Если нужно исправить "Нет" на "Да", то сначала отправьте полученный файл с исправлением, а затем свеже сгенерированный чеклист.
 """
@@ -736,7 +735,11 @@ def send_notifications(client, notifications):
 
     return notifications
 
-
+def getProjectById(projects, id):
+    for project in projects.keys():
+        if not(project == "_COUNTER"):
+            if int(projects[project]["NUMBER"]) == int(id):
+                return projects[project]
 
 def start_event_checker(config):
 
@@ -752,6 +755,7 @@ def start_event_checker(config):
         except:
             pass
         #admins = self.config["USER_RIGHTS"]["ADMIN"]
+        data = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
         match event_type:
             case 'INCOMING_MESSAGE':
 
@@ -768,6 +772,11 @@ def start_event_checker(config):
                             joke = get_joke(f"Напиши короткий смешной анекдот")
                             joke = joke.replace("\n","<br>")
                             client.send_message(target_id=int(user), target_type="person", text=f"{joke}")
+                        case "/getp":
+                            projectId = message_text.split(" ")[1]
+                            projects = data["PROJECTS"]
+                            path_last_file = getProjectById(projects, projectId)["PATH"][-1]
+                            client.send_file(target_id=int(user), filepath=f"{path_last_file}")
 
                             
 
