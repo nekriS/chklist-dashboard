@@ -75,7 +75,7 @@ def addSubSheet(workbook):
     pass
 
 
-def drawDashboard(config, dataframe, subtables: dict):
+def drawXDashboard(config, dataframe, subtables: dict):
 
     pathDashboardFile = f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FILE_DASHBOARD']}"
 

@@ -2,7 +2,8 @@ from system import log, loadData, saveData
 from .notifications import send_notifications
 from .combine import combine_checklists
 #from .states import checkStatus
-from worksheets.services import drawDashboard
+from worksheets.services import drawXDashboard
+from web.services import drawHDashboard
 import pandas as pd
 import datetime
 from pyodbc import connect
@@ -294,7 +295,8 @@ def updateDashboard(config):
     dataframe = getDataframe(projects)
     subtables = getSubtables(config, projects)
 
-    drawDashboard(config, dataframe, subtables)
+    drawXDashboard(config, dataframe, subtables)
+    drawHDashboard(config, dataframe, subtables)
 
 
 def check_function(config, client):
@@ -406,7 +408,7 @@ def checkStatus(client, config):
                     pcb_no += 1
                 noTMP += (components[comp][5])
 
-            if noTMP == len(components):
+            if noTMP == len(components) and no_bd_schem != 0 and pcb_no != 0:
                 projects[project]["STATE"] = 9
 
 
