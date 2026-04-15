@@ -1,4 +1,4 @@
-from config import NAME_CONFIG_FILE, DEFAULT_CONFIG
+from core.config import NAME_CONFIG_FILE, DEFAULT_CONFIG
 import configparser
 import datetime
 import os
@@ -45,7 +45,7 @@ def log(text):
         today_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
         # Создаем путь к каталогу и файлу
-        log_directory = 'LOG'
+        log_directory = 'log'
         log_file_name = f'log_{today_date}.txt'
         log_file_path = os.path.join(log_directory, log_file_name)
 
@@ -89,7 +89,7 @@ def create_thread_task(period, function, *args, **kwargs):
     return thread, destroy_event
 
 
-def load_data(path):
+def loadData(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -107,7 +107,7 @@ def load_data(path):
         f.close()
     return data
 
-def save_data(data, path):
+def saveData(data, path):
     with open(path, "w", encoding='utf-8') as f:
         f.write(json.dumps(data, indent=4))
     f.close()

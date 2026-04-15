@@ -1,8 +1,7 @@
-from PostLink import PostLinkClient
-
 from system import log, create_thread_task, options
-from functions import check_function, get_tmp_parts_from_db, check_status, start_event_checker, update_dashboard
-
+from messanger.PostLink import PostLinkClient
+from core.listener import getListener
+from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function
 
 
 if __name__ == "__main__":
@@ -12,7 +11,7 @@ if __name__ == "__main__":
     options.print_all_options()
     options.create_folders()
 
-    client = PostLinkClient(options.config["BOT"]['API_BASE_URL'], options.config["BOT"]['WS_URL'], silent=False, event_checker=start_event_checker(options.config))
+    client = PostLinkClient(options.config["BOT"]['API_BASE_URL'], options.config["BOT"]['WS_URL'], silent=False, listener=getListener(options.config), logger=log)
     client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
     try:
         client.ensure_connected()
@@ -50,9 +49,8 @@ if __name__ == "__main__":
                 thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
                 thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
             case "update":
-                update_dashboard(options.config)
-                check_status(client, options.config)
-                update_dashboard(options.config)
+                checkStatus(client, options.config)
+                updateDashboard(options.config)
             case "connect":
                 get_tmp_parts_from_db(options.config)
             case "send_message":

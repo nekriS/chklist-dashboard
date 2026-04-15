@@ -2,23 +2,25 @@
 log/
 /data
 data/
+_output/
+/_output
 __pycache__/
 /__pycache__
-*/
 
-config.py
+messanger/
+/messanger
+
 *.json
 
 *.pyc
 *.dll
 *.exe
-joke.py
-PostLink.py
 .venv
 
 *.zip
 *.xlsx
 
+config.py
 test.py
 config.ini
 CONFIG.INI
