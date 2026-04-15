@@ -408,7 +408,7 @@ def checkStatus(client, config):
                     pcb_no += 1
                 noTMP += (components[comp][5])
 
-            if noTMP == len(components) and no_bd_schem != 0 and pcb_no != 0:
+            if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
                 projects[project]["STATE"] = 9
 
 
