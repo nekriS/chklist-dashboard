@@ -4,3 +4,7 @@ pandas
 requests
 websocket
 websocket-client
+flask
+flask_socketio
+jinja2
+pywin32
