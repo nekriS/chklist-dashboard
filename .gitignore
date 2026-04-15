@@ -6,6 +6,10 @@ _output/
 /_output
 __pycache__/
 /__pycache__
+dist/
+/dist
+build/
+/build
 
 messanger/
 /messanger
