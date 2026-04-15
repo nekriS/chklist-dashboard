@@ -5,9 +5,10 @@ from flask_socketio import SocketIO
 from flask import redirect, url_for
 import threading
 import time
+import eventlet
 
 app = Flask(__name__, template_folder='_output', static_folder='_output')
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 BASE_DIR = os.path.abspath("_output")
 WEB_DIR = os.path.join(BASE_DIR, "web")

@@ -3,6 +3,7 @@ import time
 from addons.joke import getJoke
 from core.services import get_dashboard_html
 import datetime
+from web.utils import get_computer_link
 
 def getProjectById(projects, id):
     for project in projects.keys():
@@ -46,7 +47,8 @@ def getListener(config):
                             projects = data["PROJECTS"]
                             path_last_file = getProjectById(projects, projectId)["PATH"][-1]
                             client.send_file(target_id=int(user), filepath=f"{path_last_file}")
-
+                        case "/web":
+                            client.send_message(target_id=int(user), target_type="person", text=f'<a href="{get_computer_link()}">Ссылка на таблицу состояний</a>')
                             
 
                     log(f"admin {user}")

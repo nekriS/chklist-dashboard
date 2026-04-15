@@ -3,7 +3,7 @@ from messanger.PostLink import PostLinkClient
 from core.listener import getListener
 from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function
 from web.server import serverStart
-
+from web.utils import get_computer_link
 
 if __name__ == "__main__":
     
@@ -66,3 +66,5 @@ if __name__ == "__main__":
                         client.subscribe("/topic/messages")
                 except:
                     log("ERROR CONNECT")
+            case "web":
+                print(get_computer_link())

@@ -2,7 +2,6 @@ openpyxl
 pyodbc
 pandas
 requests
-websocket
 websocket-client
 flask
 flask_socketio
