@@ -2,6 +2,7 @@ from system import log, create_thread_task, options
 from messanger.PostLink import PostLinkClient
 from core.listener import getListener
 from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function
+from web.server import serverStart
 
 
 if __name__ == "__main__":
@@ -27,9 +28,7 @@ if __name__ == "__main__":
 
     thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
     thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
-
-    #load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
-    #create_task_notification(options.config, data_all, project, target, type_n, step=3, count=356)
+    thread_3, destroy_web_server = serverStart(port=2000, debug=False, logger=log)
 
     while True:
         command = input("")
@@ -39,15 +38,18 @@ if __name__ == "__main__":
             case "exit":
                 destroy_check_function.set()
                 destroy_tmp_parts.set()
+                destroy_web_server()
                 break
             case "reload":
                 destroy_check_function.set()
                 destroy_tmp_parts.set()
+                destroy_web_server()
                 options.update()
                 options.print_all_options()
                 options.create_folders()
                 thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
                 thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
+                thread_3, destroy_web_server = serverStart(port=2000, debug=False, logger=log)
             case "update":
                 checkStatus(client, options.config)
                 updateDashboard(options.config)
