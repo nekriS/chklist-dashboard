@@ -175,6 +175,9 @@ def get_list_checkers(components):
             # Добавляем проверяющего в список, только если комопнент не проверен и не добавлен в базу
             if component[0] == 0 and component[5] != 1:
                 sch_checkers[component[3]].append(key)
+            else:
+                pass
+            #del sch_checkers[component[3]]
         else:
             return False
         
@@ -185,6 +188,10 @@ def get_list_checkers(components):
 
             if component[1] == 0 and component[5] != 1:
                 pcb_checkers[component[4]].append(key)
+            else:
+                pass
+
+            #    del pcb_checkers[component[4]]
         else:
             return False
     
@@ -391,7 +398,6 @@ def checkStatus(client, config):
 
             components = getComponents(config, projects, project)
 
-
             yes_bd_schem = 0
             no_bd_schem = 0
             pcb_yes = 0
@@ -410,7 +416,6 @@ def checkStatus(client, config):
 
             if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
                 projects[project]["STATE"] = 9
-
 
             match state:
                 case 0: # Новый проект
@@ -525,7 +530,7 @@ def checkStatus(client, config):
 
                     else:
                         projects[project]["STATE"] = 101
-
+                    print(f"flag_all_check {flag_all_check}")
                     if flag_all_check and yes_bd_schem == len(components) and pcb_yes == len(components):
                         projects[project]["STATE"] = 5
                         delete_task_notification(config, data, project, developer, 3)
@@ -555,13 +560,18 @@ def checkStatus(client, config):
 
                     checkers = get_list_checkers(components)
 
+                    a = 0
+                    b = 0
+
                     if checkers and no_bd_schem == 0 and pcb_no == 0:
 
                         delete_task_notification(config, data, project, developer, 3)
 
                         for checker in checkers["sch"].keys():
+                            b += 1
                             if len(checkers["sch"][checker]) == 0:
                                 delete_task_notification(config, data, project, checker, 1)
+                                a += 1
                             else:
                                 message = f"""
 В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
@@ -577,8 +587,10 @@ def checkStatus(client, config):
                                 projects[project]["STATE"] = 4
 
                         for checker in checkers["pcb"].keys():
+                            b += 1
                             if len(checkers["pcb"][checker]) == 0:
-                                delete_task_notification(config, data, project, checker, 2) 
+                                delete_task_notification(config, data, project, checker, 2)
+                                a += 1
                             else:
                                 message = f"""
 В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
@@ -592,6 +604,9 @@ def checkStatus(client, config):
                                 sendLastFile(client, config, checker, message, path_last_file)
                                 create_task_notification(config, data, project, checker, 2)
                                 projects[project]["STATE"] = 4
+                        
+                        if a == b:
+                            projects[project]["STATE"] = 5
                                         
 
                 case 5: # Все проверено
