@@ -31,11 +31,11 @@ def getListener(config):
 
                 if int(user) in admins:
                     match message_text.split(" ")[0]:
-                        case "/time":
+                        case "/info" | "/time":
                             client.send_message(target_id=int(user), target_type="person", text=f"Время: {datetime.datetime.now()}")
                         case "/status":
                             pass
-                        case "/dashboard":
+                        case "/dashboard" | "/db":
                             dashboard_html = get_dashboard_html(config)
                             client.send_message(target_id=int(user), target_type="person", text=f"{dashboard_html}")
                         case "/joke":
@@ -49,8 +49,18 @@ def getListener(config):
                             client.send_file(target_id=int(user), filepath=f"{path_last_file}")
                         case "/web":
                             client.send_message(target_id=int(user), target_type="person", text=f'<a href="{get_computer_link()}">Ссылка на таблицу состояний</a>')
-                        
-                            
+                        case "/help":
+                            help_message = """
+<div style="width: 300px; margin-top: 10px; margin-bottom: 10px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;">
+<strong>Список доступных команд:</strong><br><br>
+<strong>/help</strong> - Вызов справки.<br>
+<strong>/web</strong> - Получить ссылку на web версию таблицы состояний.<br>
+<strong>/getp <id></strong> - Получить актуальный чеклист по проекту с нужным id.<br>
+<strong>/dashboard</strong> - Получить таблицу состояний.<br>
+<strong>/info</strong> - Получить информацию о хосте.<br>
+</div>
+"""
+                            client.send_message(target_id=int(user), target_type="person", text=help_message)
 
                     log(f"admin {user}")
             case "CONNECTION_CLOSED":
