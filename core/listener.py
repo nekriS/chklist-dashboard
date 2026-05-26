@@ -49,6 +49,7 @@ def getListener(config):
                             client.send_file(target_id=int(user), filepath=f"{path_last_file}")
                         case "/web":
                             client.send_message(target_id=int(user), target_type="person", text=f'<a href="{get_computer_link()}">Ссылка на таблицу состояний</a>')
+                        
                             
 
                     log(f"admin {user}")
