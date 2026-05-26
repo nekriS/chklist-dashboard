@@ -1,4 +1,4 @@
-from system import log, loadData
+from system import log, loadData, saveData
 import time
 from addons.joke import getJoke
 from core.services import get_dashboard_html
@@ -49,6 +49,16 @@ def getListener(config):
                             client.send_file(target_id=int(user), filepath=f"{path_last_file}")
                         case "/web":
                             client.send_message(target_id=int(user), target_type="person", text=f'<a href="{get_computer_link()}">Ссылка на таблицу состояний</a>')
+                        case "/complete":
+                            projectId = message_text.split(" ")[1]
+                            project = getProjectById(data["PROJECTS"], projectId)
+                            project["STATE"] = 8
+                            saveData(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+                        case "/setstate":
+                            projectId = message_text.split(" ")[1]
+                            project = getProjectById(data["PROJECTS"], projectId)
+                            project["STATE"] = message_text.split(" ")[2]
+                            saveData(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
                         case "/help":
                             help_message = """
 <div style="width: 300px; margin-top: 10px; margin-bottom: 10px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;">
@@ -58,6 +68,8 @@ def getListener(config):
 <strong>/getp <id></strong> - Получить актуальный чеклист по проекту с нужным id.<br>
 <strong>/dashboard</strong> - Получить таблицу состояний.<br>
 <strong>/info</strong> - Получить информацию о хосте.<br>
+<strong>/setstate <id> <state></strong> - Установить состояние проекта.<br>
+<strong>/complete <id></strong> - Завершить проект вручную.<br>
 </div>
 """
                             client.send_message(target_id=int(user), target_type="person", text=help_message)

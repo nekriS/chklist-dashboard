@@ -646,6 +646,9 @@ def checkStatus(client, config):
                         #delete_task_notification(config, data, project, "lib_manager", 3) 
                         projects[project]["STATE"] = 10
 
+                case 8: # Готово вручную
+                    pass 
+
                 case 9: # Готово номинально, если все компоненты уже в базе
                     pass
                 
