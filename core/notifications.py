@@ -49,8 +49,8 @@ def delete_task_notification(config, data, project, target, type_n):
     elif isinstance(target, str):
         if target == "all":
             targets = []
-            for tar in config["USER_RIGHTS"].keys():
-                targets.append(int(config["USER_RIGHTS"][tar]))
+            for tar in config["USER_ALIASE"].keys():
+                targets.append(int(config["USER_ALIASE"][tar]))
 
         elif target in config["USER_RIGHTS"].keys():
             targets = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
