@@ -65,5 +65,8 @@ def getListener(config):
                     time.sleep(30)
                     log("Connection is aborted! Try again against 30 seconds!")
                     listener(client, event_type, context)
+            
+            case "FILE_RECEIVED":
+                client.send_message(target_id=int(user), target_type="person", text=f"Файл получен!")
 
     return listener
