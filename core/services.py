@@ -417,6 +417,13 @@ def checkStatus(client, config):
             if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
                 projects[project]["STATE"] = 9
 
+            if state >= 9:
+                delete_task_notification(config, data, project, "all", 0)
+                delete_task_notification(config, data, project, "all", 1)
+                delete_task_notification(config, data, project, "all", 2)
+                delete_task_notification(config, data, project, "all", 3)
+                delete_task_notification(config, data, project, "all", 4)
+
             match state:
                 case 0: # Новый проект
 

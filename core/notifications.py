@@ -47,8 +47,14 @@ def delete_task_notification(config, data, project, target, type_n):
     if isinstance(target, int):
         targets = [target]
     elif isinstance(target, str):
-        if target in config["USER_RIGHTS"].keys():
+        if target == "all":
+            targets = []
+            for tar in config["USER_RIGHTS"].keys():
+                targets.append(int(config["USER_RIGHTS"][tar]))
+
+        elif target in config["USER_RIGHTS"].keys():
             targets = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"][target.upper()].strip('[]').split(',')]
+
         elif target in config["USER_ALIASE"].keys():
             targets = [int(config["USER_ALIASE"][target])]
         #targets = []
@@ -80,7 +86,7 @@ def send_notifications(client, notifications):
                 case 2:
                     text = makeBorder(f"<strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")
                 case 3:
-                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Внесит, пожалуйста, правки в проект <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")
+                    text = makeBorder(f"<strong>Внимание!</strong><br><br>Внесите, пожалуйста, правки в проект <strong>{notifications[notice]["PROJECT_NAME"]}</strong>.")
                 case 4:
                     text = makeBorder(f"<strong>Внимание!</strong><br><br>В проекте <strong>{notifications[notice]["PROJECT_NAME"]}</strong> все компоненты готовы к переводу в базу!")
                 case _:
