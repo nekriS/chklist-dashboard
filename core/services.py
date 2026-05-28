@@ -25,6 +25,8 @@ def getStateByNumber(stateNumber: int) -> str:
             return "Идет проверка"
         case 6:
             return "К переводу"
+        case 8:
+            return "Готов вручную"
         case 9:
             return "Готов номинально"
         case 10:
