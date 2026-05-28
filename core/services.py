@@ -648,13 +648,13 @@ def checkStatus(client, config):
                         #delete_task_notification(config, data, project, "lib_manager", 3) 
                         projects[project]["STATE"] = 10
 
-                case 8: # Готово вручную
-                    pass 
+                # case 8: # Готово вручную
+                #     pass 
 
-                case 9: # Готово номинально, если все компоненты уже в базе
-                    pass
+                # case 9: # Готово номинально, если все компоненты уже в базе
+                #     pass
                 
-                case 10: # Готово
+                case 8 | 9 | 10: # Готово
 
                     if check_date_diff(datetime.datetime.strptime(projects[project]["LASTUPDATE"], "%Y-%m-%d %H:%M:%S"), datetime.datetime.now()) > int(config["GENERAL"]["PERIOD_TO_INVISIBLE"]) and bool(projects[project]["VISIBLE"]) == True:
                         projects[project]["VISIBLE"] = False
