@@ -66,3 +66,4 @@ if __name__ == "__main__":
                         client.subscribe("/topic/messages")
                 except:
                     log("ERROR CONNECT")
+            

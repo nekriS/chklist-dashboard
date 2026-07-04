@@ -21,7 +21,7 @@ def get_components(config, data, project):
     except:
         TMP_PARTS = []
 
-    for path in data[project]["PATH"]:
+    for path in [data[project]["PATH"][-1]]:
 
         with pd.option_context('future.no_silent_downcasting', True):
             df = pd.read_excel(f"{path}", header=None, names=["B", "C", "D", "E", "F", "J", "K"], usecols="B, C, D, E, F, J, K",skiprows=7).replace(to_replace={'Не проверено': 0, 'Да': 1, 'Нет': -1})
@@ -139,14 +139,16 @@ def check_status(client, config):
             developer = projects[project]["DEVELOPER"]
 
             components = get_components(config, projects, project)
-
+            
 
             yes_bd_schem = 0
             no_bd_schem = 0
             pcb_yes = 0
             pcb_no = 0
             noTMP = 0
+            
             for comp in components:
+
                 if components[comp][0] == 1:
                     yes_bd_schem += 1
                 elif components[comp][0] == -1:
@@ -159,8 +161,7 @@ def check_status(client, config):
 
             if noTMP == len(components):
                 projects[project]["STATE"] = 9
-
-
+            
             match state:
                 case 0: # Новый проект
 
@@ -258,6 +259,7 @@ def check_status(client, config):
                 case 4: # Идет проверка, кто-то прислал файл
                     flag_all_check = True
                     checkers = get_list_checkers(components)
+                    
                     if checkers:
 
                         for checker in checkers["sch"].keys():
@@ -274,25 +276,23 @@ def check_status(client, config):
 
                     else:
                         projects[project]["STATE"] = 101
-
                     if flag_all_check and yes_bd_schem == len(components) and pcb_yes == len(components):
                         projects[project]["STATE"] = 5
                         delete_task_notification(config, data, project, developer, 3)
                     elif flag_all_check and (yes_bd_schem != len(components) or pcb_yes != len(components)):
-                        
+
                         message = f"""
 Проект проверен, есть замечания. Исправьте, пожалуйста.<br>
 <br><br>
 Название проекта: {project}<br>
 Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
 <br>
 После окончания правок, пожалуйста, пришлите свеже сгенерированный файл. Если Вы не согласны с некоторыми замечаниями, обсудите их с проверяющим. Если нужно исправить "Нет" на "Да", то сначала отправьте полученный файл с исправлением, а затем свеже сгенерированный чеклист.
 """
                         send_last_file(client, config, developer, message, path_last_file)
                         create_task_notification(config, data, project, developer, 3)
                         projects[project]["STATE"] = 401
-
+                    
                     # elif not(flag_all_check):
                     #     delete_task_notification(config, data, project, developer, 3)
                     # if yes_bd_schem == len(components) and pcb_yes == len(components):
@@ -387,19 +387,19 @@ def check_status(client, config):
             
             if projects[project]["BD"] != yes_bd_schem:
                 projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            projects[project]["BD"] = yes_bd_schem
+                projects[project]["BD"] = yes_bd_schem
 
             if projects[project]["FP"] != pcb_yes:
                 projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            projects[project]["FP"] = pcb_yes
+                projects[project]["FP"] = pcb_yes
 
             if projects[project]["COUNT"] != len(components):
                 projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            projects[project]["COUNT"] = len(components)
+                projects[project]["COUNT"] = len(components)
 
             if projects[project]["noTMP"] != noTMP:
                 projects[project]["LASTUPDATE"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            projects[project]["noTMP"] = noTMP
+                projects[project]["noTMP"] = noTMP
 
     data["PROJECTS"] = projects
     save_data(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
@@ -736,7 +736,12 @@ def send_notifications(client, notifications):
 
     return notifications
 
-
+def getProjectById(projects, id):
+    for project in projects.keys():
+        if not(project == "_COUNTER"):
+            if int(projects[project]["NUMBER"]) == int(id):
+                return projects[project]
+    
 
 def start_event_checker(config):
 
@@ -745,16 +750,19 @@ def start_event_checker(config):
         #print(context)
         try:
             user = context.get('ownerId')
-            message_text = context.get('text').split('<span')[0]
+            message_text = context.get('text')
 
             admins = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
             #aliase = config["USER_ALIASE"]
         except:
             pass
         #admins = self.config["USER_RIGHTS"]["ADMIN"]
+        data = load_data(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+    
         match event_type:
             case 'INCOMING_MESSAGE':
-
+                print(message_text)
+                print(message_text.split(" "))
                 if int(user) in admins:
                     match message_text.split(" ")[0]:
                         case "/time":
@@ -768,6 +776,11 @@ def start_event_checker(config):
                             joke = get_joke(f"Напиши короткий смешной анекдот")
                             joke = joke.replace("\n","<br>")
                             client.send_message(target_id=int(user), target_type="person", text=f"{joke}")
+                        case "/getp":
+                            projectId = message_text.split(" ")[1]
+                            projects = data["PROJECTS"]
+                            path_last_file = getProjectById(projects, projectId)["PATH"][-1]
+                            client.send_file(target_id=int(user), filepath=f"{path_last_file}")
 
                             
 
