@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
     thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
-    thread_3, destroy_web_server = serverStart(port=2000, debug=False, logger=log)
+    thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
 
     while True:
         command = input("")

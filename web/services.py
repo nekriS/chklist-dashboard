@@ -85,7 +85,7 @@ def drawHDashboard(config, dataframe, subtables: dict):
         .set_properties(subset=['Перевод'], **{'width': '140px'})\
         .hide(axis='index')
 
-        link_html = f'<a href="../dashboard.html" style="display: block; margin: 15px; font-family: Arial;">← Вернуться назад</a>\
+        link_html = f'<a href="../" style="display: block; margin: 15px; font-family: Arial;">← Вернуться назад</a>\
             <a style="display: block; font-family: Arial;">Проект: {project}</a>'
         final_html = REFRESH + link_html + styled_subdf.to_html(escape=False, index=False)
 
