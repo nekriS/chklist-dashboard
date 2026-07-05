@@ -13,19 +13,22 @@ def getProjectById(projects, id):
 
 def getListener(config):
 
+    default_path = config["GENERAL"]['DEFAULT_PATH']
+    default_folder_path = f"{default_path}{config["GENERAL"]['NAME_FOLDER_DATA']}"
+    data_path = f"{default_folder_path}/{config["GENERAL"]['NAME_FILE_DATA']}"
+
     def listener(client, event_type, context):
         log(event_type)
-        #print(context)
+
         try:
             user = context.get('ownerId')
             message_text = context.get('text').split('<span')[0]
-
             admins = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
-            #aliase = config["USER_ALIASE"]
-        except:
-            pass
-        #admins = self.config["USER_RIGHTS"]["ADMIN"]
-        data = loadData(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+
+        except Exception as e:
+            log(e)
+
+        data = loadData(f"{data_path}")
         match event_type:
             case 'INCOMING_MESSAGE':
 
@@ -53,12 +56,12 @@ def getListener(config):
                             projectId = message_text.split(" ")[1]
                             project = getProjectById(data["PROJECTS"], projectId)
                             project["STATE"] = 8
-                            saveData(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+                            saveData(data, f"{data_path}")
                         case "/setstate":
                             projectId = message_text.split(" ")[1]
                             project = getProjectById(data["PROJECTS"], projectId)
                             project["STATE"] = message_text.split(" ")[2]
-                            saveData(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+                            saveData(data, f"{data_path}")
                         case "/help":
                             help_message = """
 <div style="width: 300px; margin-top: 10px; margin-bottom: 10px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;">
