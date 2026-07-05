@@ -85,14 +85,14 @@ def drawHDashboard(config, dataframe, subtables: dict):
         .set_properties(subset=['Перевод'], **{'width': '140px'})\
         .hide(axis='index')
 
-        link_html = f'<a href="../" style="display: block; margin: 15px; font-family: Arial;">← Вернуться назад</a>\
+        link_html = f'<a href="./" style="display: block; margin: 15px; font-family: Arial;">← Вернуться назад</a>\
             <a style="display: block; font-family: Arial;">Проект: {project}</a>'
         final_html = REFRESH + link_html + styled_subdf.to_html(escape=False, index=False)
 
         with open(pathSubFile + project + ".html", "w", encoding="utf-8") as f:
             f.write(final_html)
 
-    dataframe['Имя проекта'] = dataframe['Имя проекта'].apply(lambda x: f'<a href="web/{x}.html">{x}</a>')
+    dataframe['Имя проекта'] = dataframe['Имя проекта'].apply(lambda x: f'<a href="{x}.html">{x}</a>')
 
     styled_df = dataframe.style.apply(highlight_by_value, axis=1, config=config)\
         .set_table_styles([

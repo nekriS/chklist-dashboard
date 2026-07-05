@@ -19,7 +19,7 @@ def index():
         content = file.read()
     return render_template_string(content)
 
-@app.route('/web/<path:filename>')
+@app.route('/<path:filename>')
 def serve_web_files(filename):
     return send_from_directory(WEB_DIR, filename)
 
