@@ -17,6 +17,11 @@ if __name__ == "__main__":
 
     client = PostLinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
     client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
+    match options.config["GENERAL"]["MODE"]:
+        case "DEV1":
+            client.debug = "console"
+        case "DEV2":
+            client.debug = "one_target"
     
     try:
         client.ensure_connected()
