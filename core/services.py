@@ -10,7 +10,7 @@ from pyodbc import connect
 from pathlib import Path
 import shutil
 import os
-
+import yaml
 
 
 from .notifications import create_task_notification, delete_task_notification
@@ -385,6 +385,8 @@ def delete_project(project):
 
 def checkStatus(client, config):
 
+    with open(f"languages/{config["GENERAL"]['LANGUAGE']}.yaml", "r", encoding="utf-8") as f:
+        messages = yaml.safe_load(f)
     data = loadData(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
     projects = data["PROJECTS"]
 
@@ -428,34 +430,16 @@ def checkStatus(client, config):
 
             match state:
                 case 0: # Новый проект
+                    message = messages["NEW_PROJECT"].format(project=project, developer=developer, count_components=len(components))
 
-                    message = f"""
-Добавлен новый проект для проверки! Распределите их, пожалуйста, между проверяющими.<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество компонентов: {len(components)}<br>
-<br>
-После заполнения полей с проверяющими, пришлите файл в этот чат. Рассылать проверяющим самостоятельно не требуется.
-"""
                     sendLastFile(client, config, "lib_manager", message, path_last_file)
-
                     create_task_notification(config, data, project, "lib_manager", 0, step=7)
-
                     projects[project]["STATE"] = 1
 
 
                 case 101: # Добавлен новый компонент в текущий проект
-                    message = f"""
-В действующем проекте были добавлены новые компоненты! Распределите их, пожалуйста, между проверяющими.<br>
+                    message = messages["NEW_COMPONENT"].format(project=project, developer=developer, count_components=len(components))
 
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество компонентов: {len(components)}<br>
-<br>
-После заполнения полей с проверяющими, пришлите файл в этот чат. Рассылать проверяющим самостоятельно не требуется.
-"""
                     sendLastFile(client, config, "lib_manager", message, path_last_file)
                     create_task_notification(config, data, project, "lib_manager", 0, step=7)
                     projects[project]["STATE"] = 1
@@ -473,31 +457,13 @@ def checkStatus(client, config):
                     if checkers:
                         for checker in checkers["sch"].keys():
                             if len(checkers["sch"][checker]) > 0:
-
-                                message = f"""
-Вы были назначены проверяющим схем символов компонентов!<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
+                                message = messages["CHECK_SCHEM"].format(project=project, developer=developer, count_components=len(checkers["sch"][checker]))
                                 sendLastFile(client, config, checker, message, path_last_file)
                                 create_task_notification(config, data, project, checker, 1, step=7)
 
                         for checker in checkers["pcb"].keys():
                             if len(checkers["pcb"][checker]) > 0:
-
-                                message = f"""
-Вы были назначены проверяющим посадочных компонентов!<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
+                                message = messages["CHECK_PCB"].format(project=project, developer=developer, count_components=len(checkers["pcb"][checker]))
                                 sendLastFile(client, config, checker, message, path_last_file)
                                 create_task_notification(config, data, project, checker, 2, step=7)
                         
@@ -544,15 +510,8 @@ def checkStatus(client, config):
                         projects[project]["STATE"] = 5
                         delete_task_notification(config, data, project, developer, 3)
                     elif flag_all_check and (yes_bd_schem != len(components) or pcb_yes != len(components)):
+                        message = messages["MISTAKES"].format(project=project, developer=developer)
                         
-                        message = f"""
-Проект проверен, есть замечания. Исправьте, пожалуйста.<br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-<br>
-После окончания правок, пожалуйста, пришлите свеже сгенерированный файл. Если Вы не согласны с некоторыми замечаниями, обсудите их с проверяющим. Если нужно исправить "Нет" на "Да", то сначала отправьте полученный файл с исправлением, а затем свеже сгенерированный чеклист.
-"""
                         sendLastFile(client, config, developer, message, path_last_file)
                         create_task_notification(config, data, project, developer, 3)
                         projects[project]["STATE"] = 401
@@ -582,15 +541,8 @@ def checkStatus(client, config):
                                 delete_task_notification(config, data, project, checker, 1)
                                 a += 1
                             else:
-                                message = f"""
-В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["sch"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
+                                message = messages["CHECK_MISTAKES"].format(project=project, developer=developer, count_components=len(checkers["sch"][checker]))
+                                
                                 sendLastFile(client, config, checker, message, path_last_file)
                                 create_task_notification(config, data, project, checker, 1)
                                 projects[project]["STATE"] = 4
@@ -601,15 +553,8 @@ def checkStatus(client, config):
                                 delete_task_notification(config, data, project, checker, 2)
                                 a += 1
                             else:
-                                message = f"""
-В одном из проектов были внесены правки, проверьте, пожалуйста! <br>
-<br><br>
-Название проекта: {project}<br>
-Разработчик: {developer}<br>
-Количество ваших компонентов: {len(checkers["pcb"][checker])}<br>
-<br>
-После окончания проверки, пожалуйста, пришлите проверенный файл в данный чат. В файле не должно остаться компонентов со статусом "Не проверено".
-"""
+                                message = messages["CHECK_MISTAKES"].format(project=project, developer=developer, count_components=len(checkers["pcb"][checker]))
+                                
                                 sendLastFile(client, config, checker, message, path_last_file)
                                 create_task_notification(config, data, project, checker, 2)
                                 projects[project]["STATE"] = 4
@@ -621,15 +566,8 @@ def checkStatus(client, config):
                 case 5: # Все проверено
                     checkers = get_list_checkers(components)
                     if checkers:
-                        
-                        message = f"""
-В проекте {project} все компоненты готовы к добавлению в базу! <br>
-<br><br>
-Разработчик: {developer}<br>
-Количество компонентов: {len(components)}<br>
-<br>
-Дополнительных действий не требуется.
-"""
+                        message = messages["CHECKED"].format(project=project, developer=developer, count_components=len(components))
+
                         sendLastFile(client, config, "lib_manager", message, path_last_file)
                         create_task_notification(config, data, project, "lib_manager", 4, step=7)
                         projects[project]["STATE"] = 6
@@ -639,9 +577,7 @@ def checkStatus(client, config):
 
                 case 6:
                     if noTMP == len(components):
-
-                        message = f"""
-Все компоненты в проекте {project} добавлены в базу!"""
+                        message = messages["CHECKED"].format(project=project)
                         
                         delete_task_notification(config, data, project, "lib_manager", 4)
                         sendLastFile(client, config, developer, message, path_last_file)

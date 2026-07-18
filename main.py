@@ -12,8 +12,12 @@ if __name__ == "__main__":
     options.print_all_options()
     options.create_folders()
 
-    client = PostLinkClient(options.config["BOT"]['API_BASE_URL'], options.config["BOT"]['WS_URL'], silent=False, listener=getListener(options.config), logger=log)
+    bot_api_base_url = options.config["BOT"]['API_BASE_URL']
+    bot_ws_url = options.config["BOT"]['WS_URL']
+
+    client = PostLinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
     client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
+    
     try:
         client.ensure_connected()
     except Exception as e:
@@ -25,9 +29,11 @@ if __name__ == "__main__":
         else:
             client.subscribe("/topic/messages")
 
+    check_timeout = options.config["GENERAL"]['CHECK_TIMEOUT']
+    db_timeout = options.config["DB"]['CHECK_TIMEOUT']
 
-    thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
-    thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
+    thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
+    thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
     thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
 
     while True:
@@ -47,9 +53,9 @@ if __name__ == "__main__":
                 options.update()
                 options.print_all_options()
                 options.create_folders()
-                thread, destroy_check_function = create_thread_task(options.config["GENERAL"]['CHECK_TIMEOUT'], check_function, options.config, client)
-                thread_2, destroy_tmp_parts = create_thread_task(options.config["DB"]['CHECK_TIMEOUT'], get_tmp_parts_from_db, options.config)
-                thread_3, destroy_web_server = serverStart(port=2000, debug=False, logger=log)
+                thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
+                thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
+                thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
             case "update":
                 checkStatus(client, options.config)
                 updateDashboard(options.config)

@@ -7,3 +7,4 @@ flask
 flask_socketio
 jinja2
 pywin32
+pyyaml
