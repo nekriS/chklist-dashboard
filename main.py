@@ -1,5 +1,5 @@
 from system import log, create_thread_task, options
-from messanger.PostLink import PostLinkClient
+from messanger.link import LinkClient
 from core.listener import getListener
 from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function
 from web.server import serverStart
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     bot_api_base_url = options.config["BOT"]['API_BASE_URL']
     bot_ws_url = options.config["BOT"]['WS_URL']
 
-    client = PostLinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
+    client = LinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
     client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
     match options.config["GENERAL"]["MODE"]:
         case "DEV1":

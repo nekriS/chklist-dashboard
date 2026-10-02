@@ -11,9 +11,6 @@ dist/
 build/
 /build
 
-messanger/
-/messanger
-
 *.json
 
 *.pyc
@@ -23,6 +20,8 @@ messanger/
 
 *.zip
 *.xlsx
+
+*.png
 
 config.py
 test.py
