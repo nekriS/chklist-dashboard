@@ -7,6 +7,7 @@ import json
 import urllib.parse
 from pathlib import Path
 import uuid
+import io
 
 class LinkClient:
     def __init__(self, api_base_url, ws_url, silent=False, listener=None, logger=None):
@@ -305,3 +306,20 @@ class LinkClient:
         else:
             self._log("CONSOLE MODE!")
             self._log(f"{msg_dto}")
+
+    def set_avatar(self, image):
+
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        avatar_data = buffer.getvalue()
+
+        resp = requests.patch(
+            f"{self.api_base_url}/user/avatar",
+            data=avatar_data,
+            headers={"Content-Type": "application/octet-stream"}
+        )
+
+        if resp.status_code == 200:
+            self._log("Avatar is set!")
+        else:
+            self._log(f"Error with avatar setting: {resp.status_code} — {resp.text}")

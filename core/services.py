@@ -16,6 +16,15 @@ import yaml
 from .notifications import create_task_notification, delete_task_notification
 from .utils import check_date_diff
 
+def getCountActualProjects(config) -> int:
+    data = loadData(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+    projects = data["PROJECTS"]
+    count = 0
+    for project in projects.keys():
+        if project != "_COUNTER":
+            if projects[project]["VISIBLE"] == True:
+                count += 1
+    return count
 
 def getStateByNumber(stateNumber: int) -> str:
     match stateNumber:

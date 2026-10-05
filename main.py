@@ -1,9 +1,12 @@
-from system import log, create_thread_task, options
+from system import log, create_thread_task, options, loadData
 from messanger.link import LinkClient
 from core.listener import getListener
-from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function
+from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function, getCountActualProjects
 from web.server import serverStart
 from web.utils import get_computer_link
+from addons.avatar import create_number_image
+
+VERSION = "0.0.1 2026.10.02"
 
 if __name__ == "__main__":
     
@@ -40,6 +43,10 @@ if __name__ == "__main__":
     thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
     thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
     thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
+
+    
+    projects_count = getCountActualProjects(options.config)
+    client.set_avatar(create_number_image(projects_count))
 
     while True:
         command = input("")

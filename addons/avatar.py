@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-def create_number_image(number, filename="output.png", font_color="white", bg_color="black"):
+def create_number_image(number, font_color="white", bg_color="black"):
     """
     Создает картинку 256x256 с числом строго по центру.
     """
@@ -24,9 +24,11 @@ def create_number_image(number, filename="output.png", font_color="white", bg_co
     y = (size[1] - text_height) // 2 - bbox[1]
 
     draw.text((x, y), text, fill=font_color, font=font)
+
+    return image
     
 def save_image(image, filename):
     image.save(filename)
-    
+
 # Example:
 # create_number_image(number=2, filename="number.png", font_color="black", bg_color="white")
