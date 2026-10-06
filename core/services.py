@@ -376,7 +376,7 @@ def check_function(config, client):
     if len(upload_files) > 0:
         for file in upload_files:
             try:
-                pass
+                
                 file_head = pd.read_excel(f"{path_upload_folder}/{file}", header=None, nrows=4, usecols="B").fillna("_NONE").values
                 project_name = file_head[0][0]
                 new_file_path = f"{path_work_folder}/{project_name}_{today_date}_{current_time}.xlsx".replace(" ", "_")
@@ -396,8 +396,8 @@ def check_function(config, client):
                     #client.send_message()
                     
                     log(f"New PATH in {project_name} was added!")
-            except:
-                pass
+            except Exception as e:
+                log(f"[WARN] Failed to check upload files: {e}")
         
         #update_dashboard(config)
     
