@@ -221,6 +221,46 @@ def get_tmp_parts_from_db(config):
         SQL_CONNECTION_STRING = f'Driver={DRIVER};Server={config["DB"]["SERVER"]};Database={config["DB"]["DATABASE"]};Uid={config["DB"]["USER"]};Pwd={config["DB"]["PASSWORD"]};'
         conn = connect(SQL_CONNECTION_STRING)
 
+        # GETTING TABLES NAMES
+        SQL_QUERY = """
+        SELECT name
+        FROM sys.tables;
+        """
+
+        cursor = conn.cursor()
+        cursor.execute(SQL_QUERY)
+        #print(1)
+        records = cursor.fetchall()
+
+        tables = []
+        for r in records:
+            line = []
+            for m in r:
+                line.append(m)
+            tables.append(line[0])
+
+        components = []
+
+        for table_name in tables:
+            print(table_name)
+            if table_name != "TMPPRTS":
+                SQL_QUERY = f"""
+                SELECT [PART_NUMBER]
+                FROM [{table_name}];
+                """
+
+                cursor = conn.cursor()
+                cursor.execute(SQL_QUERY)
+                records = cursor.fetchall()
+
+
+                for r in records:
+                    line = []
+                    for m in r:
+                        line.append(m)
+                    if "TMP" in line[0]:
+                        components.append(line[0])
+
         SQL_QUERY = """
         SELECT *
         FROM TMPPRTS;
@@ -230,16 +270,23 @@ def get_tmp_parts_from_db(config):
         cursor.execute(SQL_QUERY)
         records = cursor.fetchall()
         table = []
+        del_components = []
         for r in records:
             line = []
             for m in r:
                 line.append(m)
             table.append(line)
+            if line[0] not in components and line[1] == None:
+                del_components.append(line[0])
 
         df = pd.DataFrame(table, index=None, columns=["TMP_NAME", "NAME", "AUTHOR", "DATE"])
+
+        df2 = pd.DataFrame(del_components, index=None, columns=["TMP_NAME"])
         #df = df.dropna(subset=["NAME"])
         df.to_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD']}", index=False)
+        df2.to_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD_DEL']}", index=False)
         log(f"BD with TMP parts was updated successful.")
+
 
     except Exception as e:
         log(f"ERROR: {e}")
