@@ -44,9 +44,12 @@ if __name__ == "__main__":
     thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
     thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
 
-    
-    projects_count = getCountActualProjects(options.config)
-    client.set_avatar(create_number_image(projects_count))
+    try:
+        data = loadData(f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_DATA']}/{options.config["GENERAL"]['NAME_FILE_DATA']}")
+        projects_count = getCountActualProjects(data)
+        client.set_avatar(create_number_image(projects_count))
+    except Exception as e:
+        log(f"ERROR: {e}")
 
     while True:
         command = input("")

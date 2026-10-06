@@ -12,12 +12,11 @@ import shutil
 import os
 import yaml
 
-
+from addons.avatar import create_number_image
 from .notifications import create_task_notification, delete_task_notification
 from .utils import check_date_diff
 
-def getCountActualProjects(config) -> int:
-    data = loadData(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+def getCountActualProjects(data) -> int:
     projects = data["PROJECTS"]
     count = 0
     for project in projects.keys():
@@ -115,8 +114,10 @@ def getSubTable(config, projects: dict, project: str) -> list:
             line.append('Нет')
         else:
             line.append('Не проверено')
-        if components[component][5] == 1:
+        if components[component][5] == 0:
             line.append('Да')
+        elif components[component][5] == 1:
+            line.append('Удален')
         else:
             line.append('Нет')
         table.append(line)
@@ -129,6 +130,10 @@ def getComponents(config, data, project):
         TMP_PARTS = pd.read_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD']}").dropna(subset=["NAME"])['TMP_NAME'].values
     except:
         TMP_PARTS = []
+    try:
+        DEL_TMP_PARTS = pd.read_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD_DEL']}")['TMP_NAME'].values
+    except:
+        DEL_TMP_PARTS = []
 
     for path in [data[project]["PATH"][-1]]:
 
@@ -163,8 +168,13 @@ def getComponents(config, data, project):
                     components[lines[0]][4] = lines[6]
 
     for component in components.keys():
-        if component in TMP_PARTS:
+        
+        
+        
+        if component in DEL_TMP_PARTS: 
             components[component].append(1)
+        elif component not in TMP_PARTS:
+            components[component].append(2)
         else:
             components[component].append(0)
 
@@ -360,7 +370,7 @@ def updateDashboard(config):
     dataframe = getDataframe(projects)
     subtables = getSubtables(config, projects)
 
-    drawXDashboard(config, dataframe, subtables)
+    #drawXDashboard(config, dataframe, subtables)
     drawHDashboard(config, dataframe, subtables)
 
 
@@ -419,6 +429,16 @@ def check_function(config, client):
     data["NOTIFICATIONS"] = send_notifications(client, data["NOTIFICATIONS"])
 
     data["PROJECTS"] = projects
+
+    try:
+        data_old = loadData(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
+        projects_count = getCountActualProjects(data)
+        projects_count_old = getCountActualProjects(data_old)
+        if projects_count != projects_count_old:
+            client.set_avatar(create_number_image(projects_count))
+    except Exception as e:
+        log(f"ERROR: {e}")
+
     saveData(data, f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_DATA']}")
     try:
         checkStatus(client, config)
@@ -472,7 +492,8 @@ def checkStatus(client, config):
                     pcb_yes += 1
                 elif components[comp][1] == -1:
                     pcb_no += 1
-                noTMP += (components[comp][5])
+                if components[comp][5] < 2:
+                    noTMP += 1
 
             if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
                 projects[project]["STATE"] = 9

@@ -13,6 +13,7 @@ def highlight_by_value(row, config, type="main"):
     red = f"background-color: #{config['COLORS']['RED']}"
     blue = f"background-color: #{config['COLORS']['BLUE']}"
     green = f"background-color: #{config['COLORS']['GREEN']}"
+    gray = f"background-color: #{config['COLORS']['GRAY']}"
 
     if type == "main":
         color = ''
@@ -45,6 +46,8 @@ def highlight_by_value(row, config, type="main"):
                     color.append(red)
                 case "Да":
                     color.append(green)
+                case "Удален":
+                    color.append(gray)
 
         return color
 
