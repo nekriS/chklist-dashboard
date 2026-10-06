@@ -242,7 +242,7 @@ def get_tmp_parts_from_db(config):
         components = []
 
         for table_name in tables:
-            print(table_name)
+
             if table_name != "TMPPRTS":
                 SQL_QUERY = f"""
                 SELECT [PART_NUMBER]
