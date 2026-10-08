@@ -35,7 +35,11 @@ def getListener(config):
                 if int(user) in admins:
                     match message_text.split(" ")[0]:
                         case "/info" | "/time":
-                            client.send_message(target_id=int(user), target_type="person", text=f"Время: {datetime.datetime.now()}")
+                            info_text = f"""
+Время: {datetime.datetime.now()}<br>
+Версия панели: {config["GENERAL"]["VERSION"]} 
+"""
+                            client.send_message(target_id=int(user), target_type="person", text=info_text)
                         case "/status":
                             pass
                         case "/dashboard" | "/db":

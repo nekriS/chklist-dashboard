@@ -6,7 +6,7 @@ from web.server import serverStart
 from web.utils import get_computer_link
 from addons.avatar import create_number_image
 
-VERSION = "0.0.1 2026.10.02"
+VERSION = "0.0.1.001 2026.10.08"
 
 if __name__ == "__main__":
     
@@ -51,6 +51,8 @@ if __name__ == "__main__":
     except Exception as e:
         log(f"ERROR: {e}")
 
+    options.config["GENERAL"]["VERSION"] = VERSION
+
     while True:
         command = input("")
         log(command)
@@ -68,6 +70,7 @@ if __name__ == "__main__":
                 options.update()
                 options.print_all_options()
                 options.create_folders()
+                options.config["GENERAL"]["VERSION"] = VERSION
                 thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
                 thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
                 thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
