@@ -21,7 +21,7 @@ def getCountActualProjects(data) -> int:
     count = 0
     for project in projects.keys():
         if project != "_COUNTER":
-            if projects[project]["VISIBLE"] == True:
+            if (int(projects[project]["STATE"]) < 8) or (int(projects[project]["STATE"]) > 10):
                 count += 1
     return count
 
