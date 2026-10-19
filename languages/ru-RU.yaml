@@ -62,3 +62,18 @@
 
 "READY": |
     Все компоненты в проекте {project} добавлены в базу!
+
+"N_ASSING_INSPECTORS": |
+    <strong>Внимание!</strong><br><br>Для чеклиста проекта <strong>{project}</strong> необходимо распределить проверяющих!
+
+"N_CHECK_SCHEM": |
+    <strong>Внимание!</strong><br><br>Проверьте, пожалуйста, схем символы проекта <strong>{project}</strong>.
+
+"N_CHECK_PCB": |
+    <strong>Внимание!</strong><br><br>Проверьте, пожалуйста, посадочные проекта <strong>{project}</strong>.
+
+"N_CHECK_MISTAKES": |
+    <strong>Внимание!</strong><br><br>Внесите, пожалуйста, правки в проект <strong>{project}</strong>.
+
+"N_CHECKED": |
+    <strong>Внимание!</strong><br><br>В проекте <strong>{project}</strong> все компоненты готовы к переводу в базу!
