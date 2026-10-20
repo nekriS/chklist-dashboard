@@ -272,14 +272,14 @@ def drawXDashboard(config, dataframe, subtables: dict):
 #     except Exception as e:
 #         log(f"ERROR: {e}")
 
-from system import options
+# from system import options
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
     
 
 
-    options = options()
-    options.print_all_options()
-    #updateDashboard(options.config)
-    pass
+#     options = options()
+#     options.print_all_options()
+#     #updateDashboard(options.config)
+#     pass

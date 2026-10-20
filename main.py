@@ -1,57 +1,46 @@
-from system import log, create_thread_task, options, loadData
-from messanger.link import LinkClient
-from core.listener import getListener
-from core.services import checkStatus, updateDashboard, get_tmp_parts_from_db, check_function, getCountActualProjects
+from system import log, create_thread_task
+from core.dashboard import dashboardObject
+#from messanger.link import LinkClient
+#from core.listener import getListener
+from core.services import check_function, get_tmp_parts_from_db
 from web.server import serverStart
-from web.utils import get_computer_link
-from addons.avatar import create_number_image
+#from web.utils import get_computer_link
+#from addons.avatar import create_number_image
+#import yaml
 
-VERSION = "0.0.1.001 2026.10.08"
+#from core.notifications import notificationsObject
+
+VERSION = "0.0.2.002 2026.10.20"
 
 if __name__ == "__main__":
+
+    log("Start point")
+
+    dashboard = dashboardObject()
     
-    log("START")
-    options = options()
-    options.print_all_options()
-    options.create_folders()
+    dashboard.version = VERSION
 
-    bot_api_base_url = options.config["BOT"]['API_BASE_URL']
-    bot_ws_url = options.config["BOT"]['WS_URL']
 
-    client = LinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
-    client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
-    match options.config["GENERAL"]["MODE"]:
-        case "DEV1":
-            client.debug = "console"
-        case "DEV2":
-            client.debug = "one_target"
-    
-    try:
-        client.ensure_connected()
-    except Exception as e:
-        log(f"ERROR: {e}")
-
-    if client.is_auth:
-        while not client.is_connected:
+    if dashboard.messanger.is_auth:
+        while not dashboard.messanger.is_connected:
             pass
         else:
-            client.subscribe("/topic/messages")
+            dashboard.messanger.subscribe("/topic/messages")
+    #dashboard.messanger.subscribe("/topic/messages")
 
-    check_timeout = options.config["GENERAL"]['CHECK_TIMEOUT']
-    db_timeout = options.config["DB"]['CHECK_TIMEOUT']
+    loop_timeout = dashboard.config["GENERAL"]['CHECK_TIMEOUT']
+    db_fetcher_timeout = dashboard.config["DB"]['CHECK_TIMEOUT']
+    port = int(dashboard.config["WEB"]['PORT'])
 
-    thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
-    thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
-    thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
-
-    try:
-        data = loadData(f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_DATA']}/{options.config["GENERAL"]['NAME_FILE_DATA']}")
-        projects_count = getCountActualProjects(data)
-        client.set_avatar(create_number_image(projects_count))
-    except Exception as e:
-        log(f"ERROR: {e}")
-
-    options.config["GENERAL"]["VERSION"] = VERSION
+    thread_loop,        destroy_loop        = create_thread_task(loop_timeout, 
+                                                                 check_function, 
+                                                                 dashboard)
+    thread_db_fetcher,  destroy_db_fetcher  = create_thread_task(db_fetcher_timeout, 
+                                                                 get_tmp_parts_from_db, 
+                                                                 dashboard.config)
+    thread_web_server,  destroy_web_server  = serverStart(port = port, 
+                                                          debug = False, 
+                                                          logger = log)
 
     while True:
         command = input("")
@@ -59,36 +48,102 @@ if __name__ == "__main__":
         req_massive = command.split(" ")
         match req_massive[0]:
             case "exit":
-                destroy_check_function.set()
-                destroy_tmp_parts.set()
+                destroy_loop.set()
+                destroy_db_fetcher.set()
                 destroy_web_server()
                 break
-            case "reload":
-                destroy_check_function.set()
-                destroy_tmp_parts.set()
-                destroy_web_server()
-                options.update()
-                options.print_all_options()
-                options.create_folders()
-                options.config["GENERAL"]["VERSION"] = VERSION
-                thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
-                thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
-                thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
-            case "update":
-                checkStatus(client, options.config)
-                updateDashboard(options.config)
-            case "connect":
-                get_tmp_parts_from_db(options.config)
-            case "send_message":
-                client.send_message(target_id=int(req_massive[1]), target_type="person", text=" ".join(req_massive[2:]))
-            case "try":
-                try:
-                    client.ensure_connected()
-                    while not client.is_connected:
-                        pass
-                    else:
-                        client.subscribe("/topic/messages")
-                except:
-                    log("ERROR CONNECT")
-            case "web":
-                print(get_computer_link())
+
+
+
+# if __name__ == "__main__":
+    
+#     log("START")
+#     options = options()
+#     options.print_all_options()
+#     options.create_folders()
+
+#     bot_api_base_url = options.config["BOT"]['API_BASE_URL']
+#     bot_ws_url = options.config["BOT"]['WS_URL']
+
+#     client = LinkClient(bot_api_base_url, bot_ws_url, silent=False, listener=getListener(options.config), logger=log)
+#     client.download_folder = f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_UPLOADS']}"
+#     match options.config["GENERAL"]["MODE"]:
+#         case "DEV1":
+#             client.debug = "console"
+#         case "DEV2":
+#             client.debug = "one_target"
+    
+#     try:
+#         client.ensure_connected()
+#     except Exception as e:
+#         log(f"ERROR: {e}")
+
+#     if client.is_auth:
+#         while not client.is_connected:
+#             pass
+#         else:
+#             client.subscribe("/topic/messages")
+
+#     check_timeout = options.config["GENERAL"]['CHECK_TIMEOUT']
+#     db_timeout = options.config["DB"]['CHECK_TIMEOUT']
+
+#     thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
+#     thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
+#     thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
+
+#     try:
+#         data = loadData(f"{options.config["GENERAL"]['DEFAULT_PATH']}{options.config["GENERAL"]['NAME_FOLDER_DATA']}/{options.config["GENERAL"]['NAME_FILE_DATA']}")
+#         projects_count = getCountActualProjects(data)
+#         client.set_avatar(create_number_image(projects_count))
+#     except Exception as e:
+#         log(f"ERROR: {e}")
+
+#     options.config["GENERAL"]["VERSION"] = VERSION
+
+#     with open(f"languages/{options.config["GENERAL"]['LANGUAGE']}.yaml", "r", encoding="utf-8") as f:
+#         options.config["MESSAGES"] = yaml.safe_load(f)
+
+#     notifications = notificationsObject(f"{options.config["GENERAL"]['NAME_FOLDER_DATA']}/notifications.db", log=log)
+#     options.config["notifications"] = notifications
+
+#     while True:
+#         command = input("")
+#         log(command)
+#         req_massive = command.split(" ")
+#         match req_massive[0]:
+#             case "exit":
+#                 destroy_check_function.set()
+#                 destroy_tmp_parts.set()
+#                 destroy_web_server()
+#                 break
+#             case "reload":
+#                 destroy_check_function.set()
+#                 destroy_tmp_parts.set()
+#                 destroy_web_server()
+#                 options.update()
+#                 options.print_all_options()
+#                 options.create_folders()
+#                 options.config["GENERAL"]["VERSION"] = VERSION
+#                 with open(f"languages/{options.config["GENERAL"]['LANGUAGE']}.yaml", "r", encoding="utf-8") as f:
+#                     options.config["MESSAGES"] = yaml.safe_load(f)
+#                 thread, destroy_check_function = create_thread_task(check_timeout, check_function, options.config, client)
+#                 thread_2, destroy_tmp_parts = create_thread_task(db_timeout, get_tmp_parts_from_db, options.config)
+#                 thread_3, destroy_web_server = serverStart(port=int(options.config["WEB"]['PORT']), debug=False, logger=log)
+#             case "update":
+#                 checkStatus(client, options.config)
+#                 updateDashboard(options.config)
+#             case "connect":
+#                 get_tmp_parts_from_db(options.config)
+#             case "send_message":
+#                 client.send_message(target_id=int(req_massive[1]), target_type="person", text=" ".join(req_massive[2:]))
+#             case "try":
+#                 try:
+#                     client.ensure_connected()
+#                     while not client.is_connected:
+#                         pass
+#                     else:
+#                         client.subscribe("/topic/messages")
+#                 except:
+#                     log("ERROR CONNECT")
+#             case "web":
+#                 print(get_computer_link())

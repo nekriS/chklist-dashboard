@@ -1,44 +1,3 @@
-from core.config import NAME_CONFIG_FILE, DEFAULT_CONFIG
-import configparser
-import datetime
-import os
-import threading
-import json
-
-class options():
-    def __init__(self,
-                 config = configparser.ConfigParser()):
-        self.config = config
-
-        if os.path.exists(NAME_CONFIG_FILE):
-            self.update()
-        else:
-            for section, value in DEFAULT_CONFIG.items():
-                self.config[section] = value
-
-            with open(NAME_CONFIG_FILE, "w", encoding="utf-8") as f:
-                self.config.write(f)
-
-    def update(self):
-        if os.path.exists(NAME_CONFIG_FILE):
-            self.config.read(NAME_CONFIG_FILE, encoding="utf-8")
-
-    def print_all_options(self):
-        log("CONFIGURATION:")
-        for section, value in self.config.items():
-            for param in value:
-                log(f"{section} : {param} : {value[param]}")
-
-    def create_folders(self):
-        for section, value in self.config.items():
-            for param in value:
-                if "folder" in param:
-                    dir = f"{self.config[section]['DEFAULT_PATH']}{self.config[section][param]}"
-                    if not os.path.exists(dir):
-                        os.makedirs(dir)
-                        log(f"Directory {dir} was created!")
-
-
 def log(text):
     if text != "" and text != " ":
         # Получаем сегодняшнюю дату в формате YYYY-MM-DD
@@ -65,6 +24,15 @@ def log(text):
             print(log_entry)
         except:
             print(log_entry.encode("utf-8"))
+
+
+
+import datetime
+import os
+import threading
+import json
+
+
 
 
 def create_thread_task(period, function, *args, **kwargs):

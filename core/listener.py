@@ -5,17 +5,13 @@ from core.services import get_dashboard_html
 import datetime
 from web.utils import get_computer_link
 
-def getProjectById(projects, id):
-    for project in projects.keys():
-        if not(project == "_COUNTER"):
-            if int(projects[project]["NUMBER"]) == int(id):
-                return projects[project]
 
-def getListener(config):
 
-    default_path = config["GENERAL"]['DEFAULT_PATH']
-    default_folder_path = f"{default_path}{config["GENERAL"]['NAME_FOLDER_DATA']}"
-    data_path = f"{default_folder_path}/{config["GENERAL"]['NAME_FILE_DATA']}"
+def getListener(dashboard):
+
+    default_path = dashboard.config["GENERAL"]['DEFAULT_PATH']
+    default_folder_path = f"{default_path}{dashboard.config["GENERAL"]['NAME_FOLDER_DATA']}"
+    data_path = f"{default_folder_path}/{dashboard.config["GENERAL"]['NAME_FILE_DATA']}"
 
     def listener(client, event_type, context):
         log(event_type)
@@ -23,12 +19,11 @@ def getListener(config):
         try:
             user = context.get('ownerId')
             message_text = context.get('text').split('<span')[0]
-            admins = [int(config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
+            admins = [int(dashboard.config["USER_ALIASE"][x.upper().strip().replace("'","")]) for x in dashboard.config["USER_RIGHTS"]["ADMIN"].strip('[]').split(',')]
 
         except Exception as e:
             log(e)
 
-        data = loadData(f"{data_path}")
         match event_type:
             case 'INCOMING_MESSAGE':
 
@@ -37,13 +32,13 @@ def getListener(config):
                         case "/info" | "/time":
                             info_text = f"""
 Время: {datetime.datetime.now()}<br>
-Версия панели: {config["GENERAL"]["VERSION"]} 
+Версия панели: {dashboard.config["GENERAL"]["VERSION"]} 
 """
                             client.send_message(target_id=int(user), target_type="person", text=info_text)
                         case "/status":
                             pass
                         case "/dashboard" | "/db":
-                            dashboard_html = get_dashboard_html(config)
+                            dashboard_html = get_dashboard_html(dashboard)
                             client.send_message(target_id=int(user), target_type="person", text=f"{dashboard_html}")
                         case "/joke":
                             joke = getJoke(f"Напиши короткий смешной анекдот")
@@ -51,21 +46,22 @@ def getListener(config):
                             client.send_message(target_id=int(user), target_type="person", text=f"{joke}")
                         case "/getp":
                             projectId = message_text.split(" ")[1]
-                            projects = data["PROJECTS"]
-                            path_last_file = getProjectById(projects, projectId)["PATH"][-1]
+                            project = dashboard.projects.get_project_by_id(projectId)
+                            path_last_file = project["path"].split("|")[-1]
                             client.send_file(target_id=int(user), filepath=f"{path_last_file}")
                         case "/web":
                             client.send_message(target_id=int(user), target_type="person", text=f'<a href="{get_computer_link()}">Ссылка на таблицу состояний</a>')
                         case "/complete":
                             projectId = message_text.split(" ")[1]
-                            project = getProjectById(data["PROJECTS"], projectId)
-                            project["STATE"] = 8
-                            saveData(data, f"{data_path}")
+                            project = dashboard.projects.get_project_by_id(projectId)
+                            #getProjectById(data["PROJECTS"], projectId)
+                            project["state"] = 8
+                            dashboard.projects.process_batch([project])
                         case "/setstate":
                             projectId = message_text.split(" ")[1]
-                            project = getProjectById(data["PROJECTS"], projectId)
-                            project["STATE"] = message_text.split(" ")[2]
-                            saveData(data, f"{data_path}")
+                            project = dashboard.projects.get_project_by_id(projectId)
+                            project["state"] = message_text.split(" ")[2]
+                            dashboard.projects.process_batch([project])
                         case "/help":
                             help_message = """
 <div style="width: 300px; margin-top: 10px; margin-bottom: 10px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px;">

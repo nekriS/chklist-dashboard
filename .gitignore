@@ -27,3 +27,5 @@ config.py
 test.py
 config.ini
 CONFIG.INI
+*.db
+services_.py
