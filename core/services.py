@@ -215,7 +215,7 @@ def sync_status(dashboard):
                 noTMP += 1
 
         project["noTMP"] = noTMP
-        project["fb"] = pcb_yes
+        project["fp"] = pcb_yes
         project["bd"] = yes_bd_schem
 
         if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
