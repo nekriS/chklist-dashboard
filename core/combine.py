@@ -1,5 +1,5 @@
 import openpyxl as oxl
-
+from system import log
 STATUS_COLUMN = 1
 CHECKER_COLUMN = 6
 CHECKER_PCB_COLUMN = 11
@@ -264,8 +264,10 @@ def combine_checklists(first_path, second_path, output_path):
                                         second_sheet.cell(row=s_row, column=STATUS_COLUMN).value = "Не проверено"
 
     second_wb.save(output_path)
-
-    calculate_the_formulas(output_path, False)
+    try:
+        calculate_the_formulas(output_path, False)
+    except Exception as e:
+        log(f"Error with calculations formulas: {e}")
     
 
 
