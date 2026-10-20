@@ -32,7 +32,7 @@ def getListener(dashboard):
                         case "/info" | "/time":
                             info_text = f"""
 Время: {datetime.datetime.now()}<br>
-Версия панели: {dashboard.config["GENERAL"]["VERSION"]} 
+Версия панели: {dashboard.version}
 """
                             client.send_message(target_id=int(user), target_type="person", text=info_text)
                         case "/status":
