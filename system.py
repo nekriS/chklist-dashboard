@@ -56,26 +56,3 @@ def create_thread_task(period, function, *args, **kwargs):
     thread.start()
     return thread, destroy_event
 
-
-def loadData(path):
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-    except:
-        log(f'File {path} was created!')
-        data = {}
-        notifications = {}
-        projects = {}
-        projects["_COUNTER"] = 0
-        data["PROJECTS"] = projects
-        data["NOTIFICATIONS"] = notifications
-        with open(path, "w", encoding='utf-8') as f:
-            f.write(json.dumps(data, indent=4))
-    finally:
-        f.close()
-    return data
-
-def saveData(data, path):
-    with open(path, "w", encoding='utf-8') as f:
-        f.write(json.dumps(data, indent=4))
-    f.close()

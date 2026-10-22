@@ -19,7 +19,6 @@ def get_dashboard_html(dashboard):
     if len(projects) > 1:
 
         data_dataframe = getDataframe(projects)
-        #df1 = data_dataframe.iloc[:, 0:5]
 
         df2 = data_dataframe.iloc[:, [0, 1, 5, 6, 7]]
 
@@ -38,7 +37,7 @@ def get_dashboard_html(dashboard):
 def get_tmp_parts_from_db(config):
 
     try:
-        #'SQL_CONNECTION_STRING': "Driver={SQL Server};Server=CADENCESTC\SQLEXPRESS;Database=CIP_E;Uid=CIP_E_CIS_User;Pwd=Test1234;"
+
         DRIVER = "{" + config["DB"]["DRIVER"] + "}"
         SQL_CONNECTION_STRING = f'Driver={DRIVER};Server={config["DB"]["SERVER"]};Database={config["DB"]["DATABASE"]};Uid={config["DB"]["USER"]};Pwd={config["DB"]["PASSWORD"]};'
         conn = connect(SQL_CONNECTION_STRING)
@@ -104,7 +103,7 @@ def get_tmp_parts_from_db(config):
         df = pd.DataFrame(table, index=None, columns=["TMP_NAME", "NAME", "AUTHOR", "DATE"])
 
         df2 = pd.DataFrame(del_components, index=None, columns=["TMP_NAME"])
-        #df = df.dropna(subset=["NAME"])
+
         df.to_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD']}", index=False)
         df2.to_csv(f"{config["GENERAL"]['DEFAULT_PATH']}{config["GENERAL"]['NAME_FOLDER_DATA']}/{config["GENERAL"]['NAME_FILE_BD_DEL']}", index=False)
         log(f"BD with TMP parts was updated successful.")
@@ -172,7 +171,6 @@ def force_formulas(file_name, df, start=8):
                                      [f"{column}{num}" for num in range(start, start+quantity_rows+1) for column in columns])
 
     j = 0
-    # enumerate позволяет получить порядковый номер строки (0, 1, 2...)
     for idx_pos, (index, row) in enumerate(df.iterrows()):
         for column in [1, 3, 5]:
             df.iat[idx_pos, column] = values[j]
