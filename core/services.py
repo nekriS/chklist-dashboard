@@ -10,6 +10,7 @@ from .states import check_state
 from worksheets.services import drawXDashboard
 from web.services import drawHDashboard
 from pyodbc import connect
+import formulas
 
 def get_dashboard_html(dashboard):
 
@@ -136,6 +137,49 @@ def add_new_checklist(projects, path):
     except Exception as e:
         log(f"ERROR: {e}")
 
+
+
+
+def get_cell_values_by_name(file_path: str, target_sheet: str, target_cells: list[str]) -> list[str]:
+
+    abs_path = os.path.abspath(file_path)
+    xl_model = formulas.ExcelModel().loads(abs_path).finish()
+
+    res_solution = xl_model.calculate()
+
+    target_suffixies = [f"]{target_sheet.upper()}!{target_cell.strip().upper()}" for target_cell in target_cells]
+
+    result = []
+    for target_suffix in target_suffixies:
+        for key, cell_value in res_solution.items():
+            clean_key = key.replace("'", "").replace('"', "").upper()
+
+            if clean_key.endswith(target_suffix):
+                actual_value = getattr(cell_value, 'value', cell_value)
+                if isinstance(actual_value, (list, bytes, str)) and hasattr(actual_value, 'tolist'):
+                    actual_value = actual_value.tolist()
+                result.append(actual_value.item())
+
+    return result
+
+def force_formulas(file_name, df, start=8):
+    excel_file = pd.ExcelFile(file_name)
+    first_sheet_name = excel_file.sheet_names[0]
+    columns = ["C", "E", "J"]
+    quantity_rows = len(df)
+    values = get_cell_values_by_name(file_name, 
+                                     first_sheet_name, 
+                                     [f"{column}{num}" for num in range(start, start+quantity_rows+1) for column in columns])
+
+    j = 0
+    # enumerate позволяет получить порядковый номер строки (0, 1, 2...)
+    for idx_pos, (index, row) in enumerate(df.iterrows()):
+        for column in [1, 3, 5]:
+            df.iat[idx_pos, column] = values[j]
+            j += 1
+
+    return df
+
 def getComponents(config, project: dict):
     components = {}
     try:
@@ -150,11 +194,17 @@ def getComponents(config, project: dict):
     for path in [project["path"].split("|")[-1]]:
 
         with pd.option_context('future.no_silent_downcasting', True):
-            df = pd.read_excel(f"{path}", header=None, names=["B", "C", "D", "E", "F", "J", "K"], usecols="B, C, D, E, F, J, K",skiprows=7).replace(to_replace={'Не проверено': 0, 'Да': 1, 'Нет': -1})
+            df = pd.read_excel(f"{path}", header=None, names=["B", "C", "D", "E", "F", "J", "K"], usecols="B, C, D, E, F, J, K",skiprows=7)
             column_order = ["B", "C", "D", "E", "F", "J", "K"]
             df = df[column_order].fillna('_NONE')
             df = df.replace(' ', '_NONE')
-            table = df.to_numpy()
+
+            if df.iloc[0, 1] == "_NONE":
+                df = force_formulas(path, df)
+
+            df = df.replace(to_replace={'Не проверено': 0, 'Да': 1, 'Нет': -1})
+            table = df.values
+
 
         for lines in table:
 
@@ -217,6 +267,7 @@ def sync_status(dashboard):
         project["noTMP"] = noTMP
         project["fp"] = pcb_yes
         project["bd"] = yes_bd_schem
+        project["quantity"] = len(components)
 
         if noTMP == len(components) and (yes_bd_schem != len(components) or pcb_yes != len(components)):
             project["state"] = 9

@@ -12,55 +12,9 @@ MAX_PROPS = 50
 MAX_PINS = 2000
 COMMENT_COLUMN = 2
 
-import os
-import win32com.client
-import pythoncom
+#import os
+#  
 
-def calculate_the_formulas(file_path: str, visible: bool = False) -> str:
-    """
-    Открывает Excel-файл, пересчитывает все формулы и сохраняет изменения.
-    
-    Функция использует COM-интерфейс Microsoft Excel для принудительного 
-    пересчёта формул в файле. 
-    """
-    # Получаем абсолютный путь к файлу
-    abs_path = os.path.abspath(file_path)
-    
-    # Проверка существования файла
-    if not os.path.exists(abs_path):
-        raise FileNotFoundError(f"Файл не найден: {abs_path}")
-    
-    # Проверка расширения
-    if not abs_path.lower().endswith(('.xlsx', '.xls', '.xlsm')):
-        raise ValueError("Файл должен быть в формате Excel (.xlsx, .xls, .xlsm)")
-    
-    # Инициализация COM для работы в потоке (если нужно)
-    pythoncom.CoInitialize()
-    
-    excel = None
-    try:
-        # Запускаем Excel через COM
-        excel = win32com.client.Dispatch('Excel.Application')
-        excel.Visible = visible
-        excel.DisplayAlerts = False  # Отключаем диалоговые окна
-        
-        # Открываем книгу (Excel автоматически пересчитывает формулы при открытии)
-        wb = excel.Workbooks.Open(abs_path)
-        
-        # Сохраняем и закрываем
-        wb.Save()
-        wb.Close()
-        
-        return abs_path
-        
-    except Exception as e:
-        raise RuntimeError(f"Ошибка при пересчёте формул: {str(e)}")
-        
-    finally:
-        # Освобождаем ресурсы
-        if excel:
-            excel.Quit()
-        pythoncom.CoUninitialize()
 
 
 def find_start_and_end_row(sheet, start=1, end=1000):
@@ -90,6 +44,7 @@ def find_row(target, sheet, column, start_row, end_row):
             return row
 
     return -1
+
 
 def combine_checklists(first_path, second_path, output_path):
 
@@ -264,10 +219,10 @@ def combine_checklists(first_path, second_path, output_path):
                                         second_sheet.cell(row=s_row, column=STATUS_COLUMN).value = "Не проверено"
 
     second_wb.save(output_path)
-    try:
-        calculate_the_formulas(output_path, False)
-    except Exception as e:
-        log(f"Error with calculations formulas: {e}")
+    # try:
+    #     calculate_the_formulas(output_path, False)
+    # except Exception as e:
+    #     log(f"Error with calculations formulas: {e}")
     
 
 

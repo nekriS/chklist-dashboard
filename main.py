@@ -10,7 +10,7 @@ from web.server import serverStart
 
 #from core.notifications import notificationsObject
 
-VERSION = "0.0.2.002 2026.10.20"
+VERSION = "0.0.2.005 2026.10.22"
 
 if __name__ == "__main__":
 
