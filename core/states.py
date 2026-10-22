@@ -100,18 +100,21 @@ def check_state(dashboard, project, components):
         for notification_type in [0, 1, 2, 3, 4]:
             dashboard.notifications.delete_notification(project_name, get_targets(dashboard.config, "all"), notification_type)
 
+    checkers = get_list_checkers(components)
     match state:
         case 0: # Новый проект
             message = dashboard.messages["NEW_PROJECT"].format(project = project_name, 
                                                                developer = developer, 
                                                                count_components = len(components))
-
-            send_message_with_last_file(dashboard.messanger, dashboard.config, "lib_manager", message, path_last_file)
-            dashboard.notifications.create_notification(project_name, 
-                                                        targets = get_targets(dashboard.config, "lib_manager"), 
-                                                        notification_type = 0, 
-                                                        step = 7)
-            project["state"] = 1
+            if not checkers:
+                send_message_with_last_file(dashboard.messanger, dashboard.config, "lib_manager", message, path_last_file)
+                dashboard.notifications.create_notification(project_name, 
+                                                            targets = get_targets(dashboard.config, "lib_manager"), 
+                                                            notification_type = 0, 
+                                                            step = 7)
+                project["state"] = 1
+            else:
+                project["state"] = 2
 
 
         case 101: # Добавлен новый компонент в текущий проект
@@ -127,7 +130,7 @@ def check_state(dashboard, project, components):
             project["state"] = 1
         
         case 1: # Компонент отослан библиотекарю на распределение
-            checkers = get_list_checkers(components)
+
             if checkers:
                 dashboard.notifications.delete_notification(project_name, 
                                                             targets = get_targets(dashboard.config, "lib_manager"), 
@@ -136,7 +139,6 @@ def check_state(dashboard, project, components):
 
         case 2: # Получен файл от библиотекаря
 
-            checkers = get_list_checkers(components)
             if checkers:
                 for checker in checkers["sch"].keys():
                     if len(checkers["sch"][checker]) > 0:
